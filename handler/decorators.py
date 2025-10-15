@@ -6,6 +6,7 @@ from http.client import IncompleteRead
 
 import requests
 
+from handler.constants import DATE_FORMAT, TIME_FORMAT
 from handler.logging_config import setup_logging
 
 setup_logging()
@@ -15,8 +16,8 @@ def time_of_script(func):
     """Декортаор для измерения времени работы всего приложения."""
     @functools.wraps(func)
     def wrapper():
-        date_str = dt.now().strftime('%Y-%m-%d')
-        time_str = dt.now().strftime('%H:%M:%S')
+        date_str = dt.now().strftime(DATE_FORMAT)
+        time_str = dt.now().strftime(TIME_FORMAT)
         run_id = str(int(time.time()))
         print(f'Функция main начала работу {date_str} в {time_str}')
         start_time = time.time()
@@ -25,7 +26,7 @@ def time_of_script(func):
             execution_time = round(time.time() - start_time, 3)
             print(
                 'Функция main завершила '
-                f'работу в {dt.now().strftime("%H:%M:%S")}.'
+                f'работу в {dt.now().strftime(TIME_FORMAT)}.'
                 f' Время выполнения - {execution_time} сек. '
                 f'или {round(execution_time / 60, 2)} мин.'
             )
@@ -40,7 +41,7 @@ def time_of_script(func):
             execution_time = round(time.time() - start_time, 3)
             print(
                 'Функция main завершилась '
-                f'с ошибкой в {dt.now().strftime("%H:%M:%S")}. '
+                f'с ошибкой в {dt.now().strftime(TIME_FORMAT)}. '
                 f'Время выполнения - {execution_time} сек. '
                 f'Ошибка: {e}'
             )

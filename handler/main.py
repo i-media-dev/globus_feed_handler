@@ -16,9 +16,9 @@ def main():
         image_client = FeedImage()
         handler_client = FeedHandler()
 
-        # save_client.save_xml()
-        # image_client.get_images()
-        # image_client.add_frame()
+        save_client.save_xml()
+        image_client.get_images()
+        image_client.add_frame()
         # handler_client.image_replacement()
     except Exception as e:
         logging.error(f'Неожиданная ошибка: {e}')

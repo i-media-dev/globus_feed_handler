@@ -41,7 +41,8 @@ class FeedHandler(FileMixin):
 
     def _get_image_dict(self):
         image_dict = {}
-        for img_file in self._get_filenames_list(self.new_image_folder):
+        filenames_list = self._get_filenames_list(self.new_image_folder)
+        for img_file in filenames_list:
             try:
                 offer_id = img_file.split('_')[0]
                 if offer_id not in image_dict:
@@ -68,14 +69,15 @@ class FeedHandler(FileMixin):
         input_images = 0
         try:
             image_dict = self._get_image_dict()
+            filenames_list = self._get_filenames_list(self.feeds_folder)
 
-            for file_name in self._get_filenames_list(self.feeds_folder):
+            for file_name in filenames_list:
                 tree = self._get_tree(file_name, self.feeds_folder)
                 root = tree.getroot()
 
                 offers = list(root.findall('.//offer'))
                 for offer in offers:
-                    offer_id = offer.get('id')
+                    offer_id = str(offer.get('id'))
                     if not offer_id:
                         continue
 

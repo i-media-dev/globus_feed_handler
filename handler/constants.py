@@ -4,6 +4,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+DATE_FORMAT = '%Y-%m-%d'
+"""Формат даты по умолчанию."""
+
+TIME_FORMAT = '%H:%M:%S'
+"""Формат времени по умолчанию."""
+
 PROTOCOL = 'https'
 """Протокол запроса."""
 
@@ -12,6 +18,18 @@ ADDRESS = 'projects/globus/new_images'
 
 DOMEN_FTP = 'feeds.i-media.ru'
 """Домен FTP-сервера."""
+
+VERTICAL_OFFSET = 0
+"""
+Сдвиг вниз по вертикали (опциональный параметр).
+Если указать 0, изображение будет ровно по центру.
+"""
+
+DEFAULT_IMAGE_SIZE = (1000, 1000)
+"""
+Оптимальный размер рамки и финального
+изображения по умолчанию.
+"""
 
 RGB_COLOR_SETTINGS = (255, 255, 255)
 """Цвет RGB холста."""
@@ -29,14 +47,14 @@ NAME_OF_SHOP = 'globus'
 """Константа названия магазина."""
 
 FRAMES = {
-    'promocode1': 'RST1.png',
-    'promocode2': 'RST2.png',
-    'promocode3': 'RST3.png',
-    'promocode4': 'RST4.png',
-    'promocode5': 'RST5.png',
-    'promocode6': 'RST6.png'
+    '636': 'RST1.png',
+    '8592': 'RST2.png',
+    '605': 'RST3.png',
+    '685': 'RST4.png',
+    '8576': 'RST5.png',
+    '10852': 'RST6.png'
 }
-"""Название рамок, в зависимости от промокода."""
+"""Название рамок, в зависимости от категории оффера."""
 
 FRAME_FOLDER = os.getenv('FRAME_FOLDER', 'frame')
 """Константа стокового названия директории c рамкой"""
