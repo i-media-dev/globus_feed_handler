@@ -1,0 +1,12 @@
+services:
+  globus_feed_handler:
+    environment:
+      - TZ=Europe/Moscow
+    image: imediadev/globus_feed_handler
+    env_file: .env
+    volumes:
+      - ./logs:/app/logs
+      - ./${FEEDS_FOLDER}:/app/${FEEDS_FOLDER}
+      - /home/main_ftp_user/projects/globus/${NEW_FEEDS_FOLDER}:/app/${NEW_FEEDS_FOLDER}
+      - ./${IMAGE_FOLDER}:/app/${IMAGE_FOLDER}
+      - /home/main_ftp_user/projects/globus/${NEW_IMAGE_FOLDER}:/app/${NEW_IMAGE_FOLDER}
