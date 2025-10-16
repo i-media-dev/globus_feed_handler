@@ -6,6 +6,7 @@ from handler.constants import (ADDRESS, DOMEN_FTP, FEEDS_FOLDER,
 from handler.decorators import time_of_function
 from handler.logging_config import setup_logging
 from handler.mixins import FileMixin
+from handler.exceptions import DirectoryCreationError, EmptyFeedsListError
 
 setup_logging()
 
@@ -26,7 +27,7 @@ class FeedHandler(FileMixin):
         self.new_feeds_folder = new_feeds_folder
         self.new_image_folder = new_image_folder
 
-    def _save_xml(self, elem, file_folder, filename) -> None:
+    def _save_xml(self, elem, file_folder: str, filename: str) -> None:
         """Защищенный метод, сохраняет отформатированные файлы."""
         root = elem
         self._indent(root)
@@ -39,12 +40,18 @@ class FeedHandler(FileMixin):
         ) as f:
             f.write(formatted_xml)
 
-    def _get_image_dict(self):
+    def _get_image_dict(self) -> dict:
         image_dict = {}
-        filenames_list = self._get_filenames_list(self.new_image_folder)
+        try:
+            filenames_list = self._get_filenames_list(self.new_image_folder)
+        except (DirectoryCreationError, EmptyFeedsListError):
+            logging.warning(
+                'Нет подходящих офферов для обрамления изображений'
+            )
+            return image_dict
         for img_file in filenames_list:
             try:
-                offer_id = img_file.split('_')[0]
+                offer_id = img_file.split('.')[0]
                 if offer_id not in image_dict:
                     image_dict[offer_id] = []
                 image_dict[offer_id].append(img_file)
@@ -63,12 +70,17 @@ class FeedHandler(FileMixin):
         return image_dict
 
     @time_of_function
-    def image_replacement(self):
+    def image_replacement(self) -> None:
         """Метод, подставляющий в фиды новые изображения."""
         deleted_images = 0
         input_images = 0
         try:
             image_dict = self._get_image_dict()
+
+            if not image_dict:
+                logging.warning('Нет подходящих изображений')
+                return
+
             filenames_list = self._get_filenames_list(self.feeds_folder)
 
             for file_name in filenames_list:
@@ -78,7 +90,11 @@ class FeedHandler(FileMixin):
                 offers = list(root.findall('.//offer'))
                 for offer in offers:
                     offer_id = str(offer.get('id'))
+
                     if not offer_id:
+                        continue
+
+                    if offer_id not in image_dict:
                         continue
 
                     pictures = offer.findall('picture')
@@ -86,17 +102,16 @@ class FeedHandler(FileMixin):
                         offer.remove(picture)
                     deleted_images += len(pictures)
 
-                    if offer_id in image_dict:
-                        for img_file in image_dict[offer_id]:
-                            picture_tag = ET.SubElement(offer, 'picture')
-                            picture_tag.text = (
-                                f'{PROTOCOL}://{DOMEN_FTP}/'
-                                f'{ADDRESS}/{img_file}'
-                            )
-                            input_images += 1
+                    for img_file in image_dict[offer_id]:
+                        picture_tag = ET.SubElement(offer, 'picture')
+                        picture_tag.text = (
+                            f'{PROTOCOL}://{DOMEN_FTP}/'
+                            f'{ADDRESS}/{img_file}'
+                        )
+                        input_images += 1
                 self._save_xml(root, self.new_feeds_folder, file_name)
             logging.info(
-                '\n Количество удаленных изображений в '
+                '\nКоличество удаленных изображений в '
                 f'оффере - {deleted_images}\n'
                 f'Количество добавленных изображений - {input_images}'
             )

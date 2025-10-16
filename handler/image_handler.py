@@ -68,7 +68,7 @@ class FeedImage(FileMixin):
             return ''
         return f'{offer_id}.{image_format}'
 
-    def _build_offers_set(self, folder: str, target_set: set):
+    def _build_offers_set(self, folder: str, target_set: set) -> None:
         """Защищенный метод, строит множество всех существующих офферов."""
         try:
             for file_name in self._get_filenames_list(folder):
@@ -95,7 +95,7 @@ class FeedImage(FileMixin):
         image_data: bytes,
         folder_path: Path,
         image_filename: str
-    ):
+    ) -> None:
         """Защищенный метод, сохраняет изображение по указанному пути."""
         try:
             with Image.open(BytesIO(image_data)) as img:
@@ -106,7 +106,7 @@ class FeedImage(FileMixin):
             logging.error(f'Ошибка при сохранении {image_filename}: {e}')
 
     @time_of_function
-    def get_images(self):
+    def get_images(self) -> None:
         """Метод получения и сохранения изображений из xml-файла."""
         total_offers_processed = 0
         offers_with_images = 0
@@ -173,11 +173,12 @@ class FeedImage(FileMixin):
             logging.error(f'Неожиданная ошибка при получении изображений: {e}')
 
     @time_of_function
-    def add_frame(self):
+    def add_frame(self) -> None:
         """Метод форматирует изображения и добавляет рамку."""
         total_framed_images = 0
         total_failed_images = 0
         skipped_images = 0
+        skipped_unsuitable_offers = 0
         file_path = self._make_dir(self.image_folder)
         frame_path = self._make_dir(self.frame_folder)
         new_file_path = self._make_dir(self.new_image_folder)
@@ -195,7 +196,7 @@ class FeedImage(FileMixin):
             )
         images_dict = {}
         for image_name in images_names_list:
-            offer_id = image_name.split()[0]
+            offer_id = image_name.split('.')[0]
             images_dict[offer_id] = image_name
 
         try:
@@ -203,8 +204,9 @@ class FeedImage(FileMixin):
             for file_name in file_name_list:
                 tree = self._get_tree(file_name, self.feeds_folder)
                 root = tree.getroot()
+                offers = root.findall('.//offer')
 
-                for offer in root.findall('.//offer'):
+                for offer in offers:
                     offer_id = str(offer.get('id'))
                     category_elem = offer.find('categoryId')
 
@@ -271,7 +273,9 @@ class FeedImage(FileMixin):
                         logging.error(f'Ошибка при обрамлении {offer_id}: {e}')
 
             logging.info(
-                '\nКоличество уже обрамленных '
+                '\nКоличество пропущенных офферов с '
+                f'неподходящей категорией - {skipped_unsuitable_offers}\n'
+                'Количество уже обрамленных '
                 f'изображений - {skipped_images}\n'
                 f'Успешно обрамлено: {total_framed_images}\n'
                 'Количество изображений обрамленных '
