@@ -78,7 +78,7 @@ class FeedHandler(FileMixin):
             image_dict = self._get_image_dict()
 
             if not image_dict:
-                logging.warning('Нет подходящих изображений')
+                logging.warning('Нет подходящих изображений для замены')
                 return
 
             filenames_list = self._get_filenames_list(self.feeds_folder)
