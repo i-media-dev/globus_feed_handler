@@ -227,9 +227,11 @@ class FeedImage(FileMixin):
 
             for file_name in filenames_list:
                 frame_name_dict = FRAMES_NET
+                postfix = 'net'
 
                 if 'search' in file_name.split('_')[-1]:
                     frame_name_dict = FRAMES_SRCH
+                    postfix = 'srch'
 
                 tree = self._get_tree(file_name, self.feeds_folder)
                 root = tree.getroot()
@@ -294,7 +296,7 @@ class FeedImage(FileMixin):
 
                         final_image.paste(image, (x_position, y_position))
                         final_image.paste(frame_resized, (0, 0), frame_resized)
-                        filename = f'{offer_id}.png'
+                        filename = f'{offer_id}_{postfix}.png'
                         final_image.save(new_file_path / filename, 'PNG')
                         total_framed_images += 1
 

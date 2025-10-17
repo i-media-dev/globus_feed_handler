@@ -86,15 +86,20 @@ class FeedHandler(FileMixin):
             for file_name in filenames_list:
                 tree = self._get_tree(file_name, self.feeds_folder)
                 root = tree.getroot()
+                postfix = 'net'
+
+                if 'search' in file_name.split('_')[-1]:
+                    postfix = 'srch'
 
                 offers = list(root.findall('.//offer'))
                 for offer in offers:
                     offer_id = str(offer.get('id'))
+                    image_key = f'{offer_id}_{postfix}'
 
                     if not offer_id:
                         continue
 
-                    if offer_id not in image_dict:
+                    if image_key not in image_dict:
                         continue
 
                     pictures = offer.findall('picture')
@@ -102,7 +107,7 @@ class FeedHandler(FileMixin):
                         offer.remove(picture)
                     deleted_images += len(pictures)
 
-                    for img_file in image_dict[offer_id]:
+                    for img_file in image_dict[image_key]:
                         picture_tag = ET.SubElement(offer, 'picture')
                         picture_tag.text = (
                             f'{PROTOCOL}://{DOMEN_FTP}/'
