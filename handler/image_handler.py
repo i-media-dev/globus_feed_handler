@@ -8,7 +8,7 @@ from PIL import Image
 from handler.constants import (DEFAULT_IMAGE_SIZE, FEEDS_FOLDER, FRAME_FOLDER,
                                FRAMES_NET, FRAMES_SRCH, IMAGE_FOLDER,
                                NEW_IMAGE_FOLDER, NUMBER_PIXELS_IMAGE,
-                               RGB_COLOR_SETTINGS, VERTICAL_OFFSET)
+                               RGB_COLOR_SETTINGS)
 from handler.decorators import time_of_function
 from handler.exceptions import DirectoryCreationError, EmptyFeedsListError
 from handler.feeds import FEEDS
@@ -247,13 +247,13 @@ class FeedImage(FileMixin):
 
                     if category_elem is None or \
                             category_elem.text not in categories_dict:
-                        skipped_images += 1
+                        skipped_unsuitable_offers += 1
                         continue
 
                     category_id = category_elem.text
 
                     if offer_id not in images_dict:
-                        skipped_images += 1
+                        skipped_unsuitable_offers += 1
                         continue
 
                     try:
@@ -278,21 +278,17 @@ class FeedImage(FileMixin):
                         x_position = (canvas_width - image_width) // 2
                         y_position = (
                             canvas_height - image_height
-                        ) // 2 + VERTICAL_OFFSET
+                        ) // 2
 
                         if image_width > canvas_width \
                                 or image_height > canvas_height:
-                            ratio = min(
-                                canvas_width / image_width,
-                                canvas_height / image_height
-                            )
-                            new_width = int(image_width * ratio)
-                            new_height = int(image_height * ratio)
+                            new_width = int(image_width * 50 / 100)
+                            new_height = int(image_height * 50 / 100)
                             image = image.resize((new_width, new_height))
                             x_position = (canvas_width - new_width) // 2
                             y_position = (
                                 canvas_height - new_height
-                            ) // 2 + VERTICAL_OFFSET
+                            ) // 2
 
                         final_image.paste(image, (x_position, y_position))
                         final_image.paste(frame_resized, (0, 0), frame_resized)
