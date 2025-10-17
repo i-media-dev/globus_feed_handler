@@ -48,9 +48,10 @@ class FeedSave(FileMixin):
             logging.error(f'Ошибка при загрузке {feed}: {e}')
             return None
 
-    def _get_filename(self, feed: str) -> str:
+    def _get_filename(self, feed: str) -> tuple[str, str]:
         """Защищенный метод, формирующий имя xml-файлу."""
-        return feed.split('/')[-1]
+        feedname = feed.split('/')[-1].split('.')[0]
+        return f'{feedname}_search.xml', f'{feedname}_network.xml'
 
     def _validate_xml(self, xml_content: bytes) -> str:
         """
@@ -76,10 +77,11 @@ class FeedSave(FileMixin):
     def save_xml(self) -> None:
         """Метод, сохраняющий фиды в xml-файлы"""
         total_files: int = len(self.feeds_list)
+        saved_copy = 0
         saved_files = 0
         folder_path = self._make_dir(self.feeds_folder)
         for feed in self.feeds_list:
-            file_name = self._get_filename(feed)
+            file_name, file_name_copy = self._get_filename(feed)
             file_path = folder_path / file_name
             response = self._get_file(feed)
             if response is None:
@@ -93,8 +95,17 @@ class FeedSave(FileMixin):
                 tree = ET.ElementTree(xml_tree)
                 with open(file_path, 'wb') as file:
                     tree.write(file, encoding=ENCODING, xml_declaration=True)
+
+                backup_path = folder_path / file_name_copy
+                with open(backup_path, 'wb') as file:
+                    tree.write(file, encoding=ENCODING, xml_declaration=True)
+
                 saved_files += 1
-                logging.info(f'Файл {file_name} успешно сохранен')
+                saved_copy += 1
+                logging.info(
+                    f'\nФайл {file_name} успешно сохранен'
+                    f'\nКопия {file_name_copy} успешно сохранена'
+                )
             except (EmptyXMLError, InvalidXMLError) as e:
                 logging.error(f'Ошибка валидации XML {file_name}: {e}')
                 continue
@@ -102,5 +113,6 @@ class FeedSave(FileMixin):
                 logging.error(f'Ошибка обработки файла {file_name}: {e}')
                 continue
         logging.info(
-            f'Успешно записано {saved_files} файлов из {total_files}.'
+            f'\nУспешно записано {saved_files} файлов из {total_files}.'
+            f'\nСоздано копий - {saved_copy} из {total_files}.'
         )
