@@ -6,9 +6,9 @@ import requests
 from PIL import Image
 
 from handler.constants import (DEFAULT_IMAGE_SIZE, FEEDS_FOLDER, FRAME_FOLDER,
-                               FRAMES, IMAGE_FOLDER, NEW_IMAGE_FOLDER,
-                               NUMBER_PIXELS_IMAGE, RGB_COLOR_SETTINGS,
-                               VERTICAL_OFFSET)
+                               FRAMES_NET, FRAMES_SRCH, IMAGE_FOLDER,
+                               NEW_IMAGE_FOLDER, NUMBER_PIXELS_IMAGE,
+                               RGB_COLOR_SETTINGS, VERTICAL_OFFSET)
 from handler.decorators import time_of_function
 from handler.exceptions import DirectoryCreationError, EmptyFeedsListError
 from handler.feeds import FEEDS
@@ -90,6 +90,27 @@ class FeedImage(FileMixin):
             )
             raise
 
+    def _get_category_dict(self, filenames_list: list) -> dict[str, str]:
+        categories_dict = {}
+        try:
+            for filename in filenames_list:
+                tree = self._get_tree(filename, self.feeds_folder)
+                root = tree.getroot()
+                categories = root.findall('.//category')
+
+                for category in categories:
+                    category_id = category.get('id')
+                    category_parentid = category.get('parentId')
+
+                    if category_parentid not in FRAMES_NET:
+                        continue
+
+                    categories_dict[category_id] = category_parentid
+            return categories_dict
+        except Exception as e:
+            logging.error(f'Неожиданная ошибка: {e}')
+            raise
+
     def _save_image(
         self,
         image_data: bytes,
@@ -123,11 +144,12 @@ class FeedImage(FileMixin):
                 'Директория с изображениями отсутствует. Первый запуск'
             )
         try:
-            file_name_list = self._get_filenames_list(self.feeds_folder)
-            for file_name in file_name_list:
+            filenames_list = self._get_filenames_list(self.feeds_folder)
+            for file_name in filenames_list:
                 tree = self._get_tree(file_name, self.feeds_folder)
                 root = tree.getroot()
-                for offer in root.findall('.//offer'):
+                offers = root.findall('.//offer')
+                for offer in offers:
                     offer_id = offer.get('id')
                     total_offers_processed += 1
 
@@ -161,7 +183,7 @@ class FeedImage(FileMixin):
                     )
                     images_downloaded += 1
             logging.info(
-                f'\n Всего обработано фидов - {len(file_name_list)}\n'
+                f'\n Всего обработано фидов - {len(filenames_list)}\n'
                 f'Всего обработано офферов - {total_offers_processed}\n'
                 'Всего офферов с подходящими '
                 f'изображениями - {offers_with_images}\n'
@@ -200,8 +222,15 @@ class FeedImage(FileMixin):
             images_dict[offer_id] = image_name
 
         try:
-            file_name_list = self._get_filenames_list(self.feeds_folder)
-            for file_name in file_name_list:
+            filenames_list = self._get_filenames_list(self.feeds_folder)
+            categories_dict = self._get_category_dict(filenames_list)
+
+            for file_name in filenames_list:
+                frame_name_dict = FRAMES_NET
+
+                if 'search' in file_name.split('_')[-1]:
+                    frame_name_dict = FRAMES_SRCH
+
                 tree = self._get_tree(file_name, self.feeds_folder)
                 root = tree.getroot()
                 offers = root.findall('.//offer')
@@ -215,7 +244,7 @@ class FeedImage(FileMixin):
                         continue
 
                     if category_elem is None or \
-                            category_elem.text not in FRAMES:
+                            category_elem.text not in categories_dict:
                         skipped_images += 1
                         continue
 
@@ -226,8 +255,9 @@ class FeedImage(FileMixin):
                         continue
 
                     try:
+                        parent_id = categories_dict[category_id]
                         image_name = images_dict[offer_id]
-                        name_of_frame = FRAMES[category_id]
+                        name_of_frame = frame_name_dict[parent_id]
 
                         with Image.open(file_path / image_name) as image:
                             image.load()

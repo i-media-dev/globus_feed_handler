@@ -113,7 +113,9 @@ class FeedHandler(FileMixin):
             logging.info(
                 '\nКоличество удаленных изображений в '
                 f'оффере - {deleted_images}\n'
-                f'Количество добавленных изображений - {input_images}'
+                f'Количество добавленных изображений - {input_images}\n'
+                'Количество неизмененных '
+                f'изображений - {deleted_images - input_images}'
             )
 
         except Exception as e:
