@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
 
@@ -71,7 +72,7 @@ class FeedImage(FileMixin):
     def _build_offers_set(self, folder: str, target_set: set) -> None:
         """Защищенный метод, строит множество всех существующих офферов."""
         try:
-            for file_name in self._get_filenames_list(folder):
+            for file_name in self._get_filenames_set(folder):
                 offer_image = file_name.split('.')[0]
                 if offer_image:
                     target_set.add(offer_image)
@@ -92,8 +93,10 @@ class FeedImage(FileMixin):
             )
             raise
 
-    def _get_category_dict(self, filenames_list: list) -> dict[str, str]:
-        categories_dict = {}
+    def _build_category_tree(self, filenames_list: list) -> dict:
+        """Защищенный метод, строит дерево категорий."""
+        category_tree = defaultdict(list)
+
         try:
             for filename in filenames_list:
                 tree = self._get_tree(filename, self.feeds_folder)
@@ -103,14 +106,80 @@ class FeedImage(FileMixin):
                 for category in categories:
                     category_id = category.get('id')
                     category_parentid = category.get('parentId')
+                    category_tree[category_parentid].append(category_id)
 
-                    if category_parentid not in FRAMES_NET:
-                        continue
+            return category_tree
+        except Exception as error:
+            logging.error('Ошибка построения дерева категорий: %s', error)
+            raise
 
-                    categories_dict[category_id] = category_parentid
+    def _get_all_descendants(
+        self,
+        category_tree: dict,
+        parent_id: str
+    ) -> set[str]:
+        """Защищенный метод, рекурсивно получает всех потомков категории."""
+        descendants = set()
+
+        def _collect_children(cat_id: str):
+            if cat_id in category_tree:
+                for child_id in category_tree[cat_id]:
+                    descendants.add(child_id)
+                    _collect_children(child_id)
+
+        _collect_children(parent_id)
+        return descendants
+
+    def _get_categories_with_frames(self, filenames_list: list) -> set[str]:
+        """
+        Защищенный метод, возвращает множество всех категорий
+        (включая вложенные), которые должны иметь рамку.
+        """
+        category_tree = self._build_category_tree(filenames_list)
+        target_categories = set()
+
+        for frame_category in FRAMES_NET.keys():
+            target_categories.add(frame_category)
+            descendants = self._get_all_descendants(
+                category_tree,
+                frame_category
+            )
+            target_categories.update(descendants)
+
+        logging.info(
+            'Найдено %s категорий для обрамления',
+            len(target_categories)
+        )
+        return target_categories
+
+    def _get_category_dict(self, filenames_list: list) -> dict[str, str]:
+        """
+        Защищенный метод, возвращает словарь category_id -> parent_id
+        для всех категорий, которые должны иметь рамку.
+        """
+        categories_dict = {}
+        try:
+            target_categories = self._get_categories_with_frames(
+                filenames_list)
+
+            for filename in filenames_list:
+                tree = self._get_tree(filename, self.feeds_folder)
+                root = tree.getroot()
+                categories = root.findall('.//category')
+
+                for category in categories:
+                    category_id = category.get('id')
+
+                    if category_id in target_categories:
+                        categories_dict[category_id] = category.get('parentId')
+
+            logging.info(
+                'Собрано %s категорий для обрамления',
+                len(categories_dict)
+            )
             return categories_dict
         except Exception as error:
-            logging.error('Неожиданная ошибка: %s', error)
+            logging.error('Неожиданная ошибка в _get_category_dict: %s', error)
             raise
 
     def _save_image(
@@ -150,13 +219,13 @@ class FeedImage(FileMixin):
                 'Директория с изображениями отсутствует. Первый запуск'
             )
         try:
-            filenames_list = self._get_filenames_list(self.feeds_folder)
+            filenames_list = self._get_filenames_set(self.feeds_folder)
             for file_name in filenames_list:
                 tree = self._get_tree(file_name, self.feeds_folder)
                 root = tree.getroot()
                 offers = root.findall('.//offer')
                 for offer in offers:
-                    offer_id = offer.get('id')
+                    offer_id = str(offer.get('id'))
                     total_offers_processed += 1
 
                     picture = offer.find('picture')
@@ -169,7 +238,7 @@ class FeedImage(FileMixin):
 
                     offers_with_images += 1
 
-                    if str(offer_id) in self._existing_image_offers:
+                    if offer_id in self._existing_image_offers:
                         offers_skipped_existing += 1
                         continue
 
@@ -216,7 +285,7 @@ class FeedImage(FileMixin):
         file_path = self._make_dir(self.image_folder)
         frame_path = self._make_dir(self.frame_folder)
         new_file_path = self._make_dir(self.new_image_folder)
-        images_names_list = self._get_filenames_list(self.image_folder)
+        images_names_list = self._get_filenames_set(self.image_folder)
 
         try:
             self._build_offers_set(
@@ -234,7 +303,7 @@ class FeedImage(FileMixin):
             images_dict[offer_id] = image_name
 
         try:
-            filenames_list = self._get_filenames_list(self.feeds_folder)
+            filenames_list = self._get_filenames_set(self.feeds_folder)
             categories_dict = self._get_category_dict(filenames_list)
 
             for file_name in filenames_list:
@@ -304,7 +373,8 @@ class FeedImage(FileMixin):
 
                         final_image.paste(image, (x_position, y_position))
                         final_image.paste(frame_resized, (0, 0), frame_resized)
-                        filename = f'{offer_id}_{postfix}.png'
+                        promo_name = name_of_frame.split('.')[0]
+                        filename = f'{offer_id}_{promo_name}_{postfix}.png'
                         final_image.save(new_file_path / filename, 'PNG')
                         total_framed_images += 1
 
@@ -329,3 +399,8 @@ class FeedImage(FileMixin):
         except Exception as error:
             logging.error('Неожиданная ошибка наложения рамки: %s', error)
             raise
+
+    def clear_cache(self) -> None:
+        """Очищает кэши всех изображений (если вдруг надо обновить все)."""
+        self._existing_image_offers = None
+        self._existing_framed_offers = None

@@ -1,8 +1,9 @@
 import logging
 import xml.etree.ElementTree as ET
 
-from handler.constants import (ADDRESS, DOMEN_FTP, FEEDS_FOLDER,
-                               NEW_FEEDS_FOLDER, NEW_IMAGE_FOLDER, PROTOCOL)
+from handler.constants import (ADDRESS, DOMEN_FTP, FEEDS_FOLDER, FEEDS_POSTFIX,
+                               NEW_FEEDS_FOLDER, NEW_IMAGE_FOLDER, PROMO_TEXT,
+                               PROTOCOL)
 from handler.decorators import time_of_function
 from handler.exceptions import DirectoryCreationError, EmptyFeedsListError
 from handler.logging_config import setup_logging
@@ -43,7 +44,7 @@ class FeedHandler(FileMixin):
     def _get_image_dict(self) -> dict:
         image_dict = {}
         try:
-            filenames_list = self._get_filenames_list(self.new_image_folder)
+            filenames_list = self._get_filenames_set(self.new_image_folder)
         except (DirectoryCreationError, EmptyFeedsListError):
             logging.warning(
                 'Нет подходящих офферов для обрамления изображений'
@@ -83,16 +84,12 @@ class FeedHandler(FileMixin):
                 logging.warning('Нет подходящих изображений для замены')
                 return
 
-            filenames_list = self._get_filenames_list(self.feeds_folder)
+            filenames_list = self._get_filenames_set(self.feeds_folder)
 
-            for file_name in filenames_list:
-                tree = self._get_tree(file_name, self.feeds_folder)
+            for filename in filenames_list:
+                tree = self._get_tree(filename, self.feeds_folder)
                 root = tree.getroot()
-                postfix = 'net'
-
-                if 'search' in file_name.split('_')[-1]:
-                    postfix = 'srch'
-
+                postfix = FEEDS_POSTFIX[filename.split('_')[-1]]
                 offers = list(root.findall('.//offer'))
                 for offer in offers:
                     offer_id = str(offer.get('id'))
@@ -116,7 +113,7 @@ class FeedHandler(FileMixin):
                             f'{ADDRESS}/{img_file}'
                         )
                         input_images += 1
-                self._save_xml(root, self.new_feeds_folder, file_name)
+                self._save_xml(root, self.new_feeds_folder, filename)
             images_not_change = deleted_images - input_images
             logging.info(
                 '\nКоличество удаленных изображений в оффере - %s'
@@ -130,3 +127,48 @@ class FeedHandler(FileMixin):
         except Exception as error:
             logging.error('Ошибка в image_replacement: %s', error)
             raise
+
+    def add_sales_notes(self):
+        allowed_offers = set()
+        added_promo_text = 0
+        try:
+            image_names = self._get_filenames_set(self.new_image_folder)
+            offers_promocodes_dict = {
+                f'{filename.split('_')[0]}_{filename.split('_')[2]}':
+                filename.split('_')[1]
+                for filename in image_names
+            }
+            filenames = self._get_filenames_set(self.feeds_folder)
+
+            for image_name in image_names:
+                offer_id_target = image_name.split('_')[0]
+                allowed_offers.add(offer_id_target)
+
+            for filename in filenames:
+                tree = self._get_tree(filename, self.feeds_folder)
+                root = tree.getroot()
+                offers = list(root.findall('.//offer'))
+                postfix = FEEDS_POSTFIX[filename.split('_')[-1]]
+
+                for offer in offers:
+                    offer_id = str(offer.get('id'))
+
+                    if offer_id not in allowed_offers:
+                        continue
+
+                    offer_key = f'{offer_id}_{postfix}'
+
+                    sales_notes_tag = ET.SubElement(offer, 'sales_notes')
+                    sales_notes_tag.text = PROMO_TEXT.format(
+                        '10',
+                        offers_promocodes_dict[offer_key],
+                        'Москве и области',
+                        '6000'
+                    )
+                    added_promo_text += 1
+            logging.info(
+                'Тег sales_notes добавлен в %s офферов',
+                added_promo_text
+            )
+        except Exception as error:
+            logging.error('Неожиданная ошибка: %s', error)
