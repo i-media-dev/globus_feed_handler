@@ -53,8 +53,8 @@ class FeedImage(FileMixin):
             image = Image.open(BytesIO(response.content))
             image_format = image.format.lower() if image.format else None
             return response.content, image_format
-        except Exception as e:
-            logging.error(f'Ошибка при загрузке изображения {url}: {e}')
+        except Exception as error:
+            logging.error('Ошибка при загрузке изображения %s: %s', url, error)
             return None, None
 
     def _get_image_filename(
@@ -77,16 +77,18 @@ class FeedImage(FileMixin):
                     target_set.add(offer_image)
 
             logging.info(
-                f'Построен кэш для {len(target_set)} файлов'
+                'Построен кэш для %s файлов',
+                {len(target_set)}
             )
         except EmptyFeedsListError:
             raise
         except DirectoryCreationError:
             raise
-        except Exception as e:
+        except Exception as error:
             logging.error(
                 'Неожиданная ошибка при сборе множества '
-                f'скачанных изображений: {e}'
+                'скачанных изображений: %s',
+                error
             )
             raise
 
@@ -107,8 +109,8 @@ class FeedImage(FileMixin):
 
                     categories_dict[category_id] = category_parentid
             return categories_dict
-        except Exception as e:
-            logging.error(f'Неожиданная ошибка: {e}')
+        except Exception as error:
+            logging.error('Неожиданная ошибка: %s', error)
             raise
 
     def _save_image(
@@ -123,8 +125,12 @@ class FeedImage(FileMixin):
                 file_path = folder_path / image_filename
                 img.load()
                 img.save(file_path)
-        except Exception as e:
-            logging.error(f'Ошибка при сохранении {image_filename}: {e}')
+        except Exception as error:
+            logging.error(
+                'Ошибка при сохранении %s: %s',
+                image_filename,
+                error
+            )
 
     @time_of_function
     def get_images(self) -> None:
@@ -183,16 +189,22 @@ class FeedImage(FileMixin):
                     )
                     images_downloaded += 1
             logging.info(
-                f'\n Всего обработано фидов - {len(filenames_list)}\n'
-                f'Всего обработано офферов - {total_offers_processed}\n'
-                'Всего офферов с подходящими '
-                f'изображениями - {offers_with_images}\n'
-                f'Всего изображений скачано {images_downloaded}\n'
-                'Пропущено офферов с уже скачанными '
-                f'изображениями - {offers_skipped_existing}'
+                '\nВсего обработано фидов - %s'
+                '\nВсего обработано офферов - %s'
+                '\nВсего офферов с подходящими изображениями - %s'
+                '\nВсего изображений скачано %s'
+                '\nПропущено офферов с уже скачанными изображениями - %s',
+                len(filenames_list),
+                total_offers_processed,
+                offers_with_images,
+                images_downloaded,
+                offers_skipped_existing
             )
-        except Exception as e:
-            logging.error(f'Неожиданная ошибка при получении изображений: {e}')
+        except Exception as error:
+            logging.error(
+                'Неожиданная ошибка при получении изображений: %s',
+                error
+            )
 
     @time_of_function
     def add_frame(self) -> None:
@@ -296,19 +308,24 @@ class FeedImage(FileMixin):
                         final_image.save(new_file_path / filename, 'PNG')
                         total_framed_images += 1
 
-                    except Exception as e:
+                    except Exception as error:
                         total_failed_images += 1
-                        logging.error(f'Ошибка при обрамлении {offer_id}: {e}')
+                        logging.error(
+                            'Ошибка при обрамлении %s: %s',
+                            offer_id,
+                            error
+                        )
 
             logging.info(
-                '\nКоличество пропущенных офферов с '
-                f'неподходящей категорией - {skipped_unsuitable_offers}\n'
-                'Количество уже обрамленных '
-                f'изображений - {skipped_images}\n'
-                f'Успешно обрамлено: {total_framed_images}\n'
-                'Количество изображений обрамленных '
-                f'неудачно - {total_failed_images}'
+                '\nПропущенных офферов с неподходящей категорией - %s'
+                '\nКоличество уже обрамленных изображений - %s'
+                '\nУспешно обрамлено: %s'
+                '\nКоличество изображений обрамленных неудачно - %s',
+                skipped_unsuitable_offers,
+                skipped_images,
+                total_framed_images,
+                total_failed_images
             )
-        except Exception as e:
-            logging.error(f'Неожиданная ошибка наложения рамки: {e}')
+        except Exception as error:
+            logging.error('Неожиданная ошибка наложения рамки: %s', error)
             raise

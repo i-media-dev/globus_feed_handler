@@ -22,26 +22,26 @@ class FileMixin:
         """Защищенный метод, возвращает список названий фидов."""
         folder_path = Path(__file__).parent.parent / folder_name
         if not folder_path.exists():
-            logging.error(f'Папка {folder_name} не существует')
-            raise DirectoryCreationError(f'Папка {folder_name} не найдена')
+            logging.error('Папка %s не существует', folder_name)
+            raise DirectoryCreationError('Папка %s не найдена', folder_name)
         files_names = [
             file.name for file in folder_path.iterdir() if file.is_file()
         ]
         if not files_names:
             logging.error('В папке нет файлов')
             raise EmptyFeedsListError('Нет скачанных файлов')
-        logging.debug(f'Найдены файлы: {files_names}')
+        logging.debug('Найдены файлы: %s', files_names)
         return files_names
 
     def _make_dir(self, folder_name: str) -> Path:
         """Защищенный метод, создает директорию."""
         try:
             file_path = Path(__file__).parent.parent / folder_name
-            logging.debug(f'Путь к файлу: {file_path}')
+            logging.debug('Путь к файлу: %s', file_path)
             file_path.mkdir(parents=True, exist_ok=True)
             return file_path
-        except Exception as e:
-            logging.error(f'Не удалось создать директорию по причине {e}')
+        except Exception as error:
+            logging.error('Не удалось создать директорию по причине %s', error)
             raise DirectoryCreationError('Ошибка создания директории.')
 
     def _get_tree(self, file_name: str, folder_name: str) -> ET.ElementTree:
@@ -50,10 +50,13 @@ class FileMixin:
             file_path = (
                 Path(__file__).parent.parent / folder_name / file_name
             )
-            logging.debug(f'Путь к файлу: {file_path}')
+            logging.debug('Путь к файлу: %s', file_path)
             return ET.parse(file_path)
-        except Exception as e:
-            logging.error(f'Не удалось получить дерево фида по причине {e}')
+        except Exception as error:
+            logging.error(
+                'Не удалось получить дерево фида по причине %s',
+                error
+            )
             raise GetTreeError('Ошибка получения дерева фида.')
 
     def _indent(self, elem, level=0) -> None:

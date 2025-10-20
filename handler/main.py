@@ -20,8 +20,8 @@ def main():
         image_client.get_images()
         image_client.add_frame()
         handler_client.image_replacement()
-    except Exception as e:
-        logging.error(f'Неожиданная ошибка: {e}')
+    except Exception as error:
+        logging.error('Неожиданная ошибка: %s', error)
         raise
 
 

@@ -44,8 +44,8 @@ class FeedSave(FileMixin):
                 response.content
                 return response
 
-        except requests.RequestException as e:
-            logging.error(f'Ошибка при загрузке {feed}: {e}')
+        except requests.RequestException as error:
+            logging.error('Ошибка при загрузке %s: %s', feed, error)
             return None
 
     def _get_filename(self, feed: str) -> tuple[str, str]:
@@ -85,7 +85,7 @@ class FeedSave(FileMixin):
             file_path = folder_path / file_name
             response = self._get_file(feed)
             if response is None:
-                logging.warning(f'XML-файл {file_name} не получен.')
+                logging.warning('XML-файл %s не получен.', file_name)
                 continue
             try:
                 xml_content = response.content
@@ -103,16 +103,26 @@ class FeedSave(FileMixin):
                 saved_files += 1
                 saved_copy += 1
                 logging.info(
-                    f'\nФайл {file_name} успешно сохранен'
-                    f'\nКопия {file_name_copy} успешно сохранена'
+                    '\nФайл %s успешно сохранен'
+                    '\nКопия %s успешно сохранена',
+                    file_name,
+                    file_name_copy
                 )
-            except (EmptyXMLError, InvalidXMLError) as e:
-                logging.error(f'Ошибка валидации XML {file_name}: {e}')
+            except (EmptyXMLError, InvalidXMLError) as error:
+                logging.error('Ошибка валидации XML %s: %s', file_name, error)
                 continue
-            except Exception as e:
-                logging.error(f'Ошибка обработки файла {file_name}: {e}')
+            except Exception as error:
+                logging.error(
+                    'Ошибка обработки файла %s: %s',
+                    file_name,
+                    error
+                )
                 continue
         logging.info(
-            f'\nУспешно записано {saved_files} файлов из {total_files}.'
-            f'\nСоздано копий - {saved_copy} из {total_files}.'
+            '\nУспешно записано %s файлов из %s.'
+            '\nСоздано копий - %s из %s.',
+            saved_files,
+            total_files,
+            saved_copy,
+            total_files
         )

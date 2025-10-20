@@ -31,10 +31,10 @@ def time_of_script(func):
                 f'или {round(execution_time / 60, 2)} мин.'
             )
             logging.info('SCRIPT_FINISHED_STATUS=SUCCESS')
-            logging.info(f'DATE={date_str}')
-            logging.info(f'EXECUTION_TIME={execution_time} сек')
-            logging.info(f'FUNCTION_NAME={func.__name__}')
-            logging.info(f'RUN_ID={run_id}')
+            logging.info('DATE=%s', date_str)
+            logging.info('EXECUTION_TIME=%s сек', execution_time)
+            logging.info('FUNCTION_NAME=%s', func.__name__)
+            logging.info('RUN_ID=%s', run_id)
             logging.info('ENDLOGGING=1')
             return result
         except Exception as e:
@@ -46,12 +46,12 @@ def time_of_script(func):
                 f'Ошибка: {e}'
             )
             logging.info('SCRIPT_FINISHED_STATUS=ERROR')
-            logging.info(f'DATE={date_str}')
-            logging.info(f'EXECUTION_TIME={execution_time} сек')
-            logging.info(f'ERROR_TYPE={type(e).__name__}')
-            logging.info(f'ERROR_MESSAGE={str(e)}')
-            logging.info(f'FUNCTION_NAME={func.__name__}')
-            logging.info(f'RUN_ID={run_id}')
+            logging.info('DATE=%s', date_str)
+            logging.info('EXECUTION_TIME=%s сек', execution_time)
+            logging.info('ERROR_TYPE=%s', type(e).__name__)
+            logging.info('ERROR_MESSAGE=%s', str(e))
+            logging.info('FUNCTION_NAME=%s', func.__name__)
+            logging.info('RUN_ID=%s', run_id)
             logging.info('ENDLOGGING=1')
             raise
     return wrapper
@@ -75,13 +75,15 @@ def time_of_function(func):
     """
     def wrapper(*args, **kwargs):
         start_time = time.time()
-        logging.info('Функция начала работу')
+        logging.info('Функция %s начала работу', func.__name__)
         result = func(*args, **kwargs)
         execution_time = round(time.time() - start_time, 3)
         logging.info(
-            f'Функция {func.__name__} завершила работу. '
-            f'Время выполнения - {execution_time} сек. '
-            f'или {round(execution_time / 60, 2)} мин.'
+            'Функция %s завершила работу. '
+            'Время выполнения - %s сек. или %s мин.',
+            func.__name__,
+            execution_time,
+            round(execution_time / 60, 2)
         )
         return result
     return wrapper
@@ -110,11 +112,11 @@ def retry_on_network_error(max_attempts=3, delays=(2, 5, 10)):
                         delay = delays[attempt - 1] if attempt - \
                             1 < len(delays) else delays[-1]
                         logging.warning(
-                            f'Попытка {attempt}/{max_attempts} неудачна, '
-                            f'повтор через {delay}сек: {e}')
+                            'Попытка %s/%s неудачна, повтор через %s сек: %s',
+                            attempt, max_attempts, delay, e)
                         time.sleep(delay)
                     else:
-                        logging.error(f'Все {max_attempts} попыток неудачны')
+                        logging.error('Все %s попыток неудачны', max_attempts)
                         raise last_exception
             return None
         return wrapper
