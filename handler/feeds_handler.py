@@ -44,13 +44,13 @@ class FeedHandler(FileMixin):
     def _get_image_dict(self) -> dict:
         image_dict = {}
         try:
-            filenames_list = self._get_filenames_set(self.new_image_folder)
+            filenames = self._get_filenames_set(self.new_image_folder)
         except (DirectoryCreationError, EmptyFeedsListError):
             logging.warning(
                 'Нет подходящих офферов для обрамления изображений'
             )
             return image_dict
-        for img_file in filenames_list:
+        for img_file in filenames:
             try:
                 offer_id = img_file.split('.')[0]
                 if offer_id not in image_dict:
@@ -84,9 +84,9 @@ class FeedHandler(FileMixin):
                 logging.warning('Нет подходящих изображений для замены')
                 return
 
-            filenames_list = self._get_filenames_set(self.feeds_folder)
+            filenames = self._get_filenames_set(self.feeds_folder)
 
-            for filename in filenames_list:
+            for filename in filenames:
                 tree = self._get_tree(filename, self.feeds_folder)
                 root = tree.getroot()
                 postfix = FEEDS_POSTFIX[filename.split('_')[-1]]

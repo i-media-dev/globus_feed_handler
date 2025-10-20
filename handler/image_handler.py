@@ -152,7 +152,7 @@ class FeedImage(FileMixin):
         )
         return target_categories
 
-    def _get_category_dict(self, filenames_list: list) -> dict[str, str]:
+    def _get_category_dict(self, filenames: set) -> dict[str, str]:
         """
         Защищенный метод, возвращает словарь category_id -> parent_id
         для всех категорий, которые должны иметь рамку.
@@ -160,7 +160,7 @@ class FeedImage(FileMixin):
         categories_dict = {}
         try:
             all_categories = {}
-            for filename in filenames_list:
+            for filename in filenames:
                 tree = self._get_tree(filename, self.feeds_folder)
                 root = tree.getroot()
                 for category in root.findall('.//category'):
@@ -312,10 +312,10 @@ class FeedImage(FileMixin):
             images_dict[offer_id] = image_name
 
         try:
-            filenames_list = self._get_filenames_set(self.feeds_folder)
-            categories_dict = self._get_category_dict(filenames_list)
+            filenames = self._get_filenames_set(self.feeds_folder)
+            categories = self._get_category_dict(filenames)
 
-            for file_name in filenames_list:
+            for file_name in filenames:
                 frame_name_dict = FRAMES_NET
                 postfix = 'net'
 
@@ -336,7 +336,7 @@ class FeedImage(FileMixin):
                         continue
 
                     if category_elem is None or \
-                            category_elem.text not in categories_dict:
+                            category_elem.text not in categories:
                         skipped_unsuitable_offers += 1
                         continue
 
@@ -347,7 +347,7 @@ class FeedImage(FileMixin):
                         continue
 
                     try:
-                        parent_id = categories_dict[category_id]
+                        parent_id = categories[category_id]
                         image_name = images_dict[offer_id]
                         name_of_frame = frame_name_dict[parent_id]
 
