@@ -79,7 +79,7 @@ class FeedImage(FileMixin):
 
             logging.info(
                 'Построен кэш для %s файлов',
-                {len(target_set)}
+                len(target_set)
             )
         except EmptyFeedsListError:
             raise
@@ -159,27 +159,36 @@ class FeedImage(FileMixin):
         """
         categories_dict = {}
         try:
-            target_categories = self._get_categories_with_frames(
-                filenames_list)
-
+            all_categories = {}
             for filename in filenames_list:
                 tree = self._get_tree(filename, self.feeds_folder)
                 root = tree.getroot()
-                categories = root.findall('.//category')
+                for category in root.findall('.//category'):
+                    cat_id = category.get('id')
+                    parent_id = category.get('parentId')
+                    all_categories[cat_id] = parent_id
 
-                for category in categories:
-                    category_id = category.get('id')
+            def has_frame_parent(cat_id):
+                current_id = cat_id
+                while current_id:
+                    if current_id in FRAMES_NET:
+                        return current_id
+                    current_id = all_categories.get(current_id)
+                return None
 
-                    if category_id in target_categories:
-                        categories_dict[category_id] = category.get('parentId')
+            for cat_id in all_categories:
+                frame_parent = has_frame_parent(cat_id)
+                if frame_parent:
+                    categories_dict[cat_id] = frame_parent
 
             logging.info(
                 'Собрано %s категорий для обрамления',
                 len(categories_dict)
             )
             return categories_dict
+
         except Exception as error:
-            logging.error('Неожиданная ошибка в _get_category_dict: %s', error)
+            logging.error('Ошибка в _get_category_dict: %s', error)
             raise
 
     def _save_image(
@@ -402,5 +411,5 @@ class FeedImage(FileMixin):
 
     def clear_cache(self) -> None:
         """Очищает кэши всех изображений (если вдруг надо обновить все)."""
-        self._existing_image_offers = None
-        self._existing_framed_offers = None
+        self._existing_image_offers = set()
+        self._existing_framed_offers = set()
