@@ -81,14 +81,11 @@ class FeedHandler(FileMixin):
                     )
                     input_images += 1
                 self._save_xml(root, self.new_feeds_folder, filename)
-            images_not_change = deleted_images - input_images
             logging.info(
                 '\nКоличество удаленных изображений в оффере - %s'
                 '\nКоличество добавленных изображений - %s'
-                '\nКоличество неизмененных изображений - %s',
                 deleted_images,
                 input_images,
-                images_not_change
             )
 
         except Exception as error:
