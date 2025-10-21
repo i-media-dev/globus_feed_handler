@@ -93,16 +93,10 @@ class FeedHandler(FileMixin):
             raise
 
     def add_sales_notes(self):
-        allowed_offers = set()
         added_promo_text = 0
         try:
-            image_names = self._get_filenames_set(self.new_image_folder)
             image_dict = self._get_image_dict(self.new_image_folder)
             filenames = self._get_filenames_set(self.feeds_folder)
-
-            for image_name in image_names:
-                offer_id_target = image_name.split('_')[0]
-                allowed_offers.add(offer_id_target)
 
             for filename in filenames:
                 tree = self._get_tree(filename, self.feeds_folder)
@@ -112,20 +106,24 @@ class FeedHandler(FileMixin):
 
                 for offer in offers:
                     offer_id = str(offer.get('id'))
-
-                    if offer_id not in allowed_offers:
-                        continue
-
                     offer_key = f'{offer_id}_{postfix}'
 
-                    sales_notes_tag = ET.SubElement(offer, 'sales_notes')
-                    sales_notes_tag.text = PROMO_TEXT.format(
-                        DISCOUNT,
-                        image_dict[offer_key].split('.')[0].split('_')[1],
-                        GEO,
-                        PRICE
-                    )
-                    added_promo_text += 1
+                    if offer_key not in image_dict:
+                        continue
+                    try:
+                        sales_notes_tag = ET.SubElement(offer, 'sales_notes')
+                        sales_notes_tag.text = PROMO_TEXT.format(
+                            DISCOUNT,
+                            image_dict[offer_key].split('.')[0].split('_')[1],
+                            GEO,
+                            PRICE
+                        )
+                        added_promo_text += 1
+                    except (IndexError, KeyError) as error:
+                        logging.warning(
+                            'Не удалось добавить sales_notes для оффера %s: %s',
+                            offer_id, error
+                        )
             logging.info(
                 'Тег sales_notes добавлен в %s офферов',
                 added_promo_text
