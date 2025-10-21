@@ -27,14 +27,20 @@ class FeedHandler(FileMixin):
         self.new_feeds_folder = new_feeds_folder
         self.new_image_folder = new_image_folder
 
-    def _save_xml(self, elem, file_folder: str, filename: str) -> None:
+    def _save_xml(
+        self,
+        elem,
+        file_folder: str,
+        filename: str,
+        prefix='new_'
+    ) -> None:
         """Защищенный метод, сохраняет отформатированные файлы."""
         root = elem
         self._indent(root)
         formatted_xml = ET.tostring(root, encoding='unicode')
         file_path = self._make_dir(file_folder)
         with open(
-            file_path / f'new_{filename}',
+            file_path / f'{prefix}{filename}',
             'w',
             encoding='utf-8'
         ) as f:
@@ -125,7 +131,7 @@ class FeedHandler(FileMixin):
                             'для оффера %s: %s',
                             offer_id, error
                         )
-                self._save_xml(root, self.new_feeds_folder, filename)
+                self._save_xml(root, self.new_feeds_folder, filename, '')
             logging.info(
                 'Тег sales_notes добавлен в %s офферов',
                 added_promo_text
