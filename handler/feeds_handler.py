@@ -5,7 +5,6 @@ from handler.constants import (ADDRESS, DISCOUNT, DOMEN_FTP, FEEDS_FOLDER,
                                FEEDS_POSTFIX, GEO, NEW_FEEDS_FOLDER,
                                NEW_IMAGE_FOLDER, PRICE, PROMO_TEXT, PROTOCOL)
 from handler.decorators import time_of_function
-from handler.exceptions import DirectoryCreationError, EmptyFeedsListError
 from handler.logging_config import setup_logging
 from handler.mixins import FileMixin
 
@@ -41,44 +40,13 @@ class FeedHandler(FileMixin):
         ) as f:
             f.write(formatted_xml)
 
-    def _get_image_dict(self) -> dict:
-        image_dict = {}
-        try:
-            filenames = self._get_filenames_set(self.new_image_folder)
-        except (DirectoryCreationError, EmptyFeedsListError):
-            logging.warning(
-                'Нет подходящих офферов для обрамления изображений'
-            )
-            return image_dict
-        for img_file in filenames:
-            try:
-                offer_id = img_file.split('.')[0]
-                if offer_id not in image_dict:
-                    image_dict[offer_id] = []
-                image_dict[offer_id].append(img_file)
-            except (ValueError, IndexError):
-                logging.warning(
-                    'Не удалось присвоить изображение %s ключу %s',
-                    img_file,
-                    offer_id
-                )
-                continue
-            except Exception as error:
-                logging.error(
-                    'Неожиданная ошибка во время '
-                    'сборки словаря image_dict: %s',
-                    error
-                )
-                raise
-        return image_dict
-
     @time_of_function
     def image_replacement(self) -> None:
         """Метод, подставляющий в фиды новые изображения."""
         deleted_images = 0
         input_images = 0
         try:
-            image_dict = self._get_image_dict()
+            image_dict = self._get_image_dict(self.new_image_folder)
 
             if not image_dict:
                 logging.warning('Нет подходящих изображений для замены')
@@ -89,7 +57,7 @@ class FeedHandler(FileMixin):
             for filename in filenames:
                 tree = self._get_tree(filename, self.feeds_folder)
                 root = tree.getroot()
-                postfix = FEEDS_POSTFIX[filename.split('_')[-1]]
+                postfix = FEEDS_POSTFIX[filename.split('_')[-1].split('.')[0]]
                 offers = list(root.findall('.//offer'))
                 for offer in offers:
                     offer_id = str(offer.get('id'))
@@ -106,13 +74,12 @@ class FeedHandler(FileMixin):
                         offer.remove(picture)
                     deleted_images += len(pictures)
 
-                    for img_file in image_dict[image_key]:
-                        picture_tag = ET.SubElement(offer, 'picture')
-                        picture_tag.text = (
-                            f'{PROTOCOL}://{DOMEN_FTP}/'
-                            f'{ADDRESS}/{img_file}'
-                        )
-                        input_images += 1
+                    picture_tag = ET.SubElement(offer, 'picture')
+                    picture_tag.text = (
+                        f'{PROTOCOL}://{DOMEN_FTP}/'
+                        f'{ADDRESS}/{image_dict[image_key]}'
+                    )
+                    input_images += 1
                 self._save_xml(root, self.new_feeds_folder, filename)
             images_not_change = deleted_images - input_images
             logging.info(
@@ -133,11 +100,7 @@ class FeedHandler(FileMixin):
         added_promo_text = 0
         try:
             image_names = self._get_filenames_set(self.new_image_folder)
-            offers_promocodes_dict = {
-                f'{filename.split('_')[0]}_{filename.split('_')[2]}':
-                filename.split('_')[1]
-                for filename in image_names
-            }
+            image_dict = self._get_image_dict(self.new_image_folder)
             filenames = self._get_filenames_set(self.feeds_folder)
 
             for image_name in image_names:
@@ -161,7 +124,7 @@ class FeedHandler(FileMixin):
                     sales_notes_tag = ET.SubElement(offer, 'sales_notes')
                     sales_notes_tag.text = PROMO_TEXT.format(
                         DISCOUNT,
-                        offers_promocodes_dict[offer_key],
+                        image_dict[offer_key].split('.')[0].split('_')[1],
                         GEO,
                         PRICE
                     )

@@ -40,7 +40,6 @@ class FeedImage(FileMixin):
         self.feeds_list = feeds_list
         self.number_pixels_image = number_pixels_image
         self._existing_image_offers = set()
-        self._existing_framed_offers = set()
 
     def _get_image_data(self, url: str) -> tuple:
         """
@@ -168,9 +167,9 @@ class FeedImage(FileMixin):
                 'Директория с изображениями отсутствует. Первый запуск'
             )
         try:
-            filenames_list = self._get_filenames_set(self.feeds_folder)
-            for file_name in filenames_list:
-                tree = self._get_tree(file_name, self.feeds_folder)
+            filenames = self._get_filenames_set(self.feeds_folder)
+            for filename in filenames:
+                tree = self._get_tree(filename, self.feeds_folder)
                 root = tree.getroot()
                 offers = root.findall('.//offer')
                 for offer in offers:
@@ -212,7 +211,7 @@ class FeedImage(FileMixin):
                 '\nВсего офферов с подходящими изображениями - %s'
                 '\nВсего изображений скачано %s'
                 '\nПропущено офферов с уже скачанными изображениями - %s',
-                len(filenames_list),
+                len(filenames),
                 total_offers_processed,
                 offers_with_images,
                 images_downloaded,
@@ -236,15 +235,10 @@ class FeedImage(FileMixin):
         new_file_path = self._make_dir(self.new_image_folder)
         images_names_list = self._get_filenames_set(self.image_folder)
 
-        try:
-            self._build_offers_set(
-                self.new_image_folder,
-                self._existing_framed_offers
-            )
-        except (DirectoryCreationError, EmptyFeedsListError):
-            logging.warning(
-                'Директория с форматированными изображениями отсутствует. '
-                'Первый запуск'
+        image_framed_dict = self._get_image_dict(self.new_image_folder)
+        if not image_framed_dict:
+            logging.info(
+                'Обрамленные изображениями отсутствуют. Первый запуск'
             )
         images_dict = {}
         for image_name in images_names_list:
@@ -270,8 +264,9 @@ class FeedImage(FileMixin):
                 for offer in offers:
                     offer_id = str(offer.get('id'))
                     category_elem = offer.find('categoryId')
+                    offer_key = f'{offer_id}_{postfix}'
 
-                    if offer_id in self._existing_framed_offers:
+                    if offer_key in image_framed_dict:
                         skipped_images += 1
                         continue
 
@@ -350,6 +345,5 @@ class FeedImage(FileMixin):
             raise
 
     def clear_cache(self) -> None:
-        """Очищает кэши всех изображений (если вдруг надо обновить все)."""
+        """Очищает кэш всех изображений (если вдруг надо обновить все)."""
         self._existing_image_offers = set()
-        self._existing_framed_offers = set()
