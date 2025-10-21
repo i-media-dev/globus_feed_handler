@@ -83,7 +83,7 @@ class FeedHandler(FileMixin):
                 self._save_xml(root, self.new_feeds_folder, filename)
             logging.info(
                 '\nКоличество удаленных изображений в оффере - %s'
-                '\nКоличество добавленных изображений - %s'
+                '\nКоличество добавленных изображений - %s',
                 deleted_images,
                 input_images,
             )
@@ -121,7 +121,8 @@ class FeedHandler(FileMixin):
                         added_promo_text += 1
                     except (IndexError, KeyError) as error:
                         logging.warning(
-                            'Не удалось добавить sales_notes для оффера %s: %s',
+                            'Не удалось добавить sales_notes '
+                            'для оффера %s: %s',
                             offer_id, error
                         )
             logging.info(
