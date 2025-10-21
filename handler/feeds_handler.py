@@ -125,6 +125,7 @@ class FeedHandler(FileMixin):
                             'для оффера %s: %s',
                             offer_id, error
                         )
+                self._save_xml(root, self.new_feeds_folder, filename)
             logging.info(
                 'Тег sales_notes добавлен в %s офферов',
                 added_promo_text
