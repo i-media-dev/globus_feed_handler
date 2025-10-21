@@ -1,9 +1,9 @@
 import logging
 import xml.etree.ElementTree as ET
 
-from handler.constants import (ADDRESS, DOMEN_FTP, FEEDS_FOLDER, FEEDS_POSTFIX,
-                               NEW_FEEDS_FOLDER, NEW_IMAGE_FOLDER, PROMO_TEXT,
-                               PROTOCOL, GEO, DISCOUNT, PRICE)
+from handler.constants import (ADDRESS, DISCOUNT, DOMEN_FTP, FEEDS_FOLDER,
+                               FEEDS_POSTFIX, GEO, NEW_FEEDS_FOLDER,
+                               NEW_IMAGE_FOLDER, PRICE, PROMO_TEXT, PROTOCOL)
 from handler.decorators import time_of_function
 from handler.exceptions import DirectoryCreationError, EmptyFeedsListError
 from handler.logging_config import setup_logging
