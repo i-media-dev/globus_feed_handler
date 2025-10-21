@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from handler.constants import (ADDRESS, DOMEN_FTP, FEEDS_FOLDER, FEEDS_POSTFIX,
                                NEW_FEEDS_FOLDER, NEW_IMAGE_FOLDER, PROMO_TEXT,
-                               PROTOCOL)
+                               PROTOCOL, GEO, DISCOUNT, PRICE)
 from handler.decorators import time_of_function
 from handler.exceptions import DirectoryCreationError, EmptyFeedsListError
 from handler.logging_config import setup_logging
@@ -148,7 +148,7 @@ class FeedHandler(FileMixin):
                 tree = self._get_tree(filename, self.feeds_folder)
                 root = tree.getroot()
                 offers = list(root.findall('.//offer'))
-                postfix = FEEDS_POSTFIX[filename.split('_')[-1]]
+                postfix = FEEDS_POSTFIX[filename.split('_')[-1].split('.')[0]]
 
                 for offer in offers:
                     offer_id = str(offer.get('id'))
@@ -160,10 +160,10 @@ class FeedHandler(FileMixin):
 
                     sales_notes_tag = ET.SubElement(offer, 'sales_notes')
                     sales_notes_tag.text = PROMO_TEXT.format(
-                        '10',
+                        DISCOUNT,
                         offers_promocodes_dict[offer_key],
-                        'Москве и области',
-                        '6000'
+                        GEO,
+                        PRICE
                     )
                     added_promo_text += 1
             logging.info(

@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
 
@@ -92,65 +91,6 @@ class FeedImage(FileMixin):
                 error
             )
             raise
-
-    def _build_category_tree(self, filenames_list: list) -> dict:
-        """Защищенный метод, строит дерево категорий."""
-        category_tree = defaultdict(list)
-
-        try:
-            for filename in filenames_list:
-                tree = self._get_tree(filename, self.feeds_folder)
-                root = tree.getroot()
-                categories = root.findall('.//category')
-
-                for category in categories:
-                    category_id = category.get('id')
-                    category_parentid = category.get('parentId')
-                    category_tree[category_parentid].append(category_id)
-
-            return category_tree
-        except Exception as error:
-            logging.error('Ошибка построения дерева категорий: %s', error)
-            raise
-
-    def _get_all_descendants(
-        self,
-        category_tree: dict,
-        parent_id: str
-    ) -> set[str]:
-        """Защищенный метод, рекурсивно получает всех потомков категории."""
-        descendants = set()
-
-        def _collect_children(cat_id: str):
-            if cat_id in category_tree:
-                for child_id in category_tree[cat_id]:
-                    descendants.add(child_id)
-                    _collect_children(child_id)
-
-        _collect_children(parent_id)
-        return descendants
-
-    def _get_categories_with_frames(self, filenames_list: list) -> set[str]:
-        """
-        Защищенный метод, возвращает множество всех категорий
-        (включая вложенные), которые должны иметь рамку.
-        """
-        category_tree = self._build_category_tree(filenames_list)
-        target_categories = set()
-
-        for frame_category in FRAMES_NET.keys():
-            target_categories.add(frame_category)
-            descendants = self._get_all_descendants(
-                category_tree,
-                frame_category
-            )
-            target_categories.update(descendants)
-
-        logging.info(
-            'Найдено %s категорий для обрамления',
-            len(target_categories)
-        )
-        return target_categories
 
     def _get_category_dict(self, filenames: set) -> dict[str, str]:
         """
