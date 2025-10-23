@@ -1,7 +1,7 @@
 import logging
 import xml.etree.ElementTree as ET
 
-from handler.constants import (ADDRESS, DOMEN_FTP, DEFAULT_TEXT, FEEDS_FOLDER,
+from handler.constants import (ADDRESS, DEFAULT_TEXT, DOMEN_FTP, FEEDS_FOLDER,
                                FEEDS_POSTFIX, NEW_FEEDS_FOLDER,
                                NEW_IMAGE_FOLDER, PROMO_TEXT, PROTOCOL)
 from handler.decorators import time_of_function
