@@ -87,11 +87,13 @@ class FeedHandler(FileMixin):
                     )
                     input_images += 1
                 self._save_xml(root, self.new_feeds_folder, filename)
+            sum_offers = len(offers) * len(filenames)
             logging.info(
-                '\nВсего офферов - %s'
+                '\nВсего офферов - %s суммарно в %s фидах'
                 '\nКоличество удаленных изображений - %s'
                 '\nКоличество добавленных изображений - %s',
-                len(offers),
+                sum_offers,
+                len(filenames),
                 deleted_images,
                 input_images,
             )
@@ -136,11 +138,13 @@ class FeedHandler(FileMixin):
                             offer_id, error
                         )
                 self._save_xml(root, self.new_feeds_folder, filename, '')
+            sum_offers = len(offers) * len(filenames)
             logging.info(
-                '\nВсего офферов - %s'
+                '\nВсего офферов - %s суммарно в %s фидах'
                 '\nТег sales_notes с дефолтным текстом добавлен в %s офферов'
                 '\nТег sales_notes c промокодом добавлен в %s офферов',
-                len(offers),
+                sum_offers,
+                len(filenames),
                 added_default_text,
                 added_promo_text
             )
