@@ -1,9 +1,9 @@
 import logging
 import xml.etree.ElementTree as ET
 
-from handler.constants import (ADDRESS, DISCOUNT, DOMEN_FTP, FEEDS_FOLDER,
-                               FEEDS_POSTFIX, GEO, NEW_FEEDS_FOLDER,
-                               NEW_IMAGE_FOLDER, PRICE, PROMO_TEXT, PROTOCOL)
+from handler.constants import (ADDRESS, DOMEN_FTP, DEFAULT_TEXT, FEEDS_FOLDER,
+                               FEEDS_POSTFIX, NEW_FEEDS_FOLDER,
+                               NEW_IMAGE_FOLDER, PROMO_TEXT, PROTOCOL)
 from handler.decorators import time_of_function
 from handler.logging_config import setup_logging
 from handler.mixins import FileMixin
@@ -88,8 +88,10 @@ class FeedHandler(FileMixin):
                     input_images += 1
                 self._save_xml(root, self.new_feeds_folder, filename)
             logging.info(
-                '\nКоличество удаленных изображений в оффере - %s'
+                '\nВсего офферов - %s'
+                '\nКоличество удаленных изображений - %s'
                 '\nКоличество добавленных изображений - %s',
+                len(offers),
                 deleted_images,
                 input_images,
             )
@@ -100,6 +102,7 @@ class FeedHandler(FileMixin):
 
     def add_sales_notes(self):
         added_promo_text = 0
+        added_default_text = 0
         try:
             image_dict = self._get_image_dict(self.new_image_folder)
             filenames = self._get_filenames_set(self.new_feeds_folder)
@@ -114,17 +117,18 @@ class FeedHandler(FileMixin):
                     offer_id = str(offer.get('id'))
                     offer_key = f'{offer_id}_{postfix}'
 
-                    if offer_key not in image_dict:
-                        continue
                     try:
                         sales_notes_tag = ET.SubElement(offer, 'sales_notes')
-                        sales_notes_tag.text = PROMO_TEXT.format(
-                            DISCOUNT,
-                            image_dict[offer_key].split('.')[0].split('_')[1],
-                            GEO,
-                            PRICE
-                        )
-                        added_promo_text += 1
+                        if offer_key in image_dict:
+                            sales_notes_tag.text = PROMO_TEXT.format(
+                                image_dict[offer_key].split(
+                                    '.'
+                                )[0].split('_')[1]
+                            )
+                            added_promo_text += 1
+                        else:
+                            sales_notes_tag.text = DEFAULT_TEXT
+                            added_default_text += 1
                     except (IndexError, KeyError) as error:
                         logging.warning(
                             'Не удалось добавить sales_notes '
@@ -133,7 +137,11 @@ class FeedHandler(FileMixin):
                         )
                 self._save_xml(root, self.new_feeds_folder, filename, '')
             logging.info(
-                'Тег sales_notes добавлен в %s офферов',
+                '\nВсего офферов - %s'
+                '\nТег sales_notes с дефолтным текстом добавлен в %s офферов'
+                '\nТег sales_notes c промокодом добавлен в %s офферов',
+                len(offers),
+                added_default_text,
                 added_promo_text
             )
         except Exception as error:
