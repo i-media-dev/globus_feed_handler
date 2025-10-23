@@ -41,8 +41,14 @@ class FeedSave(FileMixin):
             response = requests.get(feed, stream=True, timeout=(10, 60))
 
             if response.status_code == requests.codes.ok:
-                response.content
                 return response
+            else:
+                logging.error(
+                    'HTTP ошибка %s при загрузке %s',
+                    response.status_code,
+                    feed
+                )
+                return None
 
         except requests.RequestException as error:
             logging.error('Ошибка при загрузке %s: %s', feed, error)
