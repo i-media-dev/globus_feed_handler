@@ -123,7 +123,7 @@ class FeedSave(FileMixin):
                     file_name,
                     error
                 )
-                continue
+                raise
         logging.info(
             '\nУспешно записано %s файлов из %s.'
             '\nСоздано копий - %s из %s.',
