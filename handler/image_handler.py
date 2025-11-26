@@ -16,6 +16,7 @@ from handler.logging_config import setup_logging
 from handler.mixins import FileMixin
 
 setup_logging()
+logger = logging.getLogger(__name__)
 
 
 class FeedImage(FileMixin):
@@ -205,16 +206,18 @@ class FeedImage(FileMixin):
                         image_filename
                     )
                     images_downloaded += 1
-            logging.info(
-                '\nВсего обработано фидов - %s'
-                '\nВсего обработано офферов - %s'
-                '\nВсего офферов с подходящими изображениями - %s'
-                '\nВсего изображений скачано %s'
-                '\nПропущено офферов с уже скачанными изображениями - %s',
-                len(filenames),
+            logger.bot_event(
+                'Всего обработано %s офферов в %s фидах',
                 total_offers_processed,
-                offers_with_images,
-                images_downloaded,
+                len(filenames)
+            )
+            logger.bot_event(
+                'Всего офферов с подходящими изображениями - %s',
+                offers_with_images
+            )
+            logger.bot_event('Всего изображений скачано %s', images_downloaded)
+            logger.bot_event(
+                'Пропущено офферов с уже скачанными изображениями - %s',
                 offers_skipped_existing
             )
         except Exception as error:
@@ -329,21 +332,16 @@ class FeedImage(FileMixin):
                             offer_id,
                             error
                         )
-
-            logging.info(
-                '\nПропущенных офферов с неподходящей категорией - %s'
-                '\nКоличество уже обрамленных изображений - %s'
-                '\nУспешно обрамлено: %s'
-                '\nКоличество изображений обрамленных неудачно - %s',
-                skipped_unsuitable_offers,
-                skipped_images,
-                total_framed_images,
-                total_failed_images
+            logger.bot_event(
+                'Пропущенных офферов с неподходящей категорией - %s',
+                skipped_unsuitable_offers
             )
+            logger.bot_event(
+                'Количество уже обрамленных изображений - %s',
+                skipped_images
+            )
+            logger.bot_event('Успешно обрамлено - %s', total_framed_images)
+            logger.bot_event('Неудачно обрамлено - %s', total_failed_images)
         except Exception as error:
             logging.error('Неожиданная ошибка наложения рамки: %s', error)
             raise
-
-    def clear_cache(self) -> None:
-        """Очищает кэш всех изображений (если вдруг надо обновить все)."""
-        self._existing_image_offers = set()
