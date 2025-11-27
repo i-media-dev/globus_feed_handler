@@ -73,27 +73,20 @@ class FeedHandler(FileMixin):
                     if not offer_id:
                         continue
 
-                    if image_key not in image_dict:
-                        continue
+                    if image_key in image_dict:
+                        pictures = offer.findall('picture')
+                        for picture in pictures:
+                            offer.remove(picture)
+                        deleted_images += len(pictures)
 
-                    pictures = offer.findall('picture')
-                    for picture in pictures:
-                        offer.remove(picture)
-                    deleted_images += len(pictures)
-
-                    picture_tag = ET.SubElement(offer, 'picture')
-                    picture_tag.text = (
-                        f'{PROTOCOL}://{DOMEN_FTP}/'
-                        f'{ADDRESS}/{image_dict[image_key]}'
-                    )
-                    input_images += 1
+                        for img_file in image_dict[image_key]:
+                            picture_tag = ET.SubElement(offer, 'picture')
+                            picture_tag.text = (
+                                f'{PROTOCOL}://{DOMEN_FTP}/'
+                                f'{ADDRESS}/{img_file}'
+                            )
+                            input_images += 1
                 self._save_xml(root, self.new_feeds_folder, filename)
-            sum_offers = len(offers) * len(filenames)
-            logger.bot_event(
-                'Всего офферов - %s суммарно в %s фидах',
-                sum_offers,
-                len(filenames)
-            )
             logger.bot_event(
                 'Количество удаленных изображений - %s',
                 deleted_images
