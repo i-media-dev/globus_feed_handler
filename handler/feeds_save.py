@@ -49,11 +49,13 @@ class FeedSave(FileMixin):
                     response.status_code,
                     feed
                 )
-                return None
+                raise requests.exceptions.HTTPError(
+                    f'HTTP {response.status_code} для {feed}'
+                )
 
         except requests.RequestException as error:
             logging.error('Ошибка при загрузке %s: %s', feed, error)
-            return None
+            raise
 
     def _get_filename(self, feed: str) -> tuple[str, str]:
         """Защищенный метод, формирующий имя xml-файлу."""
@@ -90,11 +92,8 @@ class FeedSave(FileMixin):
         for feed in self.feeds_list:
             file_name, file_name_copy = self._get_filename(feed)
             file_path = folder_path / file_name
-            response = self._get_file(feed)
-            if response is None:
-                logging.warning('XML-файл %s не получен.', file_name)
-                continue
             try:
+                response = self._get_file(feed)
                 xml_content = response.content
                 decoded_content = self._validate_xml(xml_content)
                 xml_tree = ET.fromstring(decoded_content)
@@ -115,6 +114,9 @@ class FeedSave(FileMixin):
                     file_name,
                     file_name_copy
                 )
+            except requests.exceptions.RequestException as error:
+                logging.warning('Фид %s не получен: %s', file_name, error)
+                continue
             except (EmptyXMLError, InvalidXMLError) as error:
                 logging.error('Ошибка валидации XML %s: %s', file_name, error)
                 continue
@@ -126,10 +128,8 @@ class FeedSave(FileMixin):
                 )
                 raise
         logger.bot_event(
-            '\nУспешно записано %s файлов из %s.'
-            '\nСоздано копий - %s из %s.',
+            'Успешно записано %s/%s файлов.',
             saved_files,
-            total_files,
-            saved_copy,
             total_files
         )
+        logger.bot_event('Создано копий - %s/%s.', saved_copy, total_files)

@@ -7,7 +7,7 @@ from http.client import IncompleteRead
 
 import requests
 
-from handler.constants import DATE_FORMAT, TIME_FORMAT
+from handler.constants import ATTEMPTION_LOAD_FEED, DATE_FORMAT, TIME_FORMAT
 from handler.logging_config import setup_logging
 
 setup_logging()
@@ -91,7 +91,10 @@ def time_of_function(func):
     return wrapper
 
 
-def retry_on_network_error(max_attempts=3, delays=(2, 5, 10)):
+def retry_on_network_error(
+    max_attempts=ATTEMPTION_LOAD_FEED,
+    delays=(5, 15, 30)
+):
     """Декоратор для повторных попыток скачивания при сетевых ошибках."""
     def decorator(func):
         @functools.wraps(func)
@@ -105,17 +108,25 @@ def retry_on_network_error(max_attempts=3, delays=(2, 5, 10)):
                     return func(*args, **kwargs)
                 except (
                     IncompleteRead,
+                    ConnectionResetError,
+                    ConnectionError,
+                    ConnectionAbortedError,
+                    ConnectionRefusedError,
                     requests.exceptions.ConnectionError,
                     requests.exceptions.ChunkedEncodingError,
                     requests.exceptions.ReadTimeout
-                ) as e:
-                    last_exception = e
+                ) as error:
+                    last_exception = error
                     if attempt < max_attempts:
                         delay = delays[attempt - 1] if attempt - \
                             1 < len(delays) else delays[-1]
                         logging.warning(
                             'Попытка %s/%s неудачна, повтор через %s сек: %s',
-                            attempt, max_attempts, delay, e)
+                            attempt,
+                            max_attempts,
+                            delay,
+                            error
+                        )
                         time.sleep(delay)
                     else:
                         logging.error('Все %s попыток неудачны', max_attempts)
