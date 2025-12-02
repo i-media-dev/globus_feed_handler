@@ -79,13 +79,12 @@ class FeedHandler(FileMixin):
                             offer.remove(picture)
                         deleted_images += len(pictures)
 
-                        for img_file in image_dict[image_key]:
-                            picture_tag = ET.SubElement(offer, 'picture')
-                            picture_tag.text = (
-                                f'{PROTOCOL}://{DOMEN_FTP}/'
-                                f'{ADDRESS}/{img_file}'
-                            )
-                            input_images += 1
+                        picture_tag = ET.SubElement(offer, 'picture')
+                        picture_tag.text = (
+                            f'{PROTOCOL}://{DOMEN_FTP}/'
+                            f'{ADDRESS}/{image_dict[image_key]}'
+                        )
+                        input_images += 1
                 self._save_xml(root, self.new_feeds_folder, filename)
             logger.bot_event(
                 'Количество удаленных изображений - %s',
