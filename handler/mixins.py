@@ -87,8 +87,9 @@ class FileMixin:
         for img_file in image_names:
             try:
                 offer_id = img_file.split('.')[0].split('_')[0]
+                file_city = img_file.split('_')[-2]
                 postfix = img_file.split('.')[0].split('_')[-1]
-                image_key = f'{offer_id}_{postfix}'
+                image_key = f'{offer_id}_{file_city}_{postfix}'
                 image_dict[image_key] = img_file
             except (ValueError, IndexError):
                 logging.warning(

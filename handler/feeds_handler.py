@@ -111,10 +111,11 @@ class FeedHandler(FileMixin):
                 root = tree.getroot()
                 offers = list(root.findall('.//offer'))
                 postfix = FEEDS_POSTFIX[filename.split('_')[-1].split('.')[0]]
+                file_city = filename.split('_')[-2]
 
                 for offer in offers:
                     offer_id = str(offer.get('id'))
-                    offer_key = f'{offer_id}_{postfix}'
+                    offer_key = f'{offer_id}_{file_city}_{postfix}'
 
                     try:
                         sales_notes_tag = ET.SubElement(offer, 'sales_notes')

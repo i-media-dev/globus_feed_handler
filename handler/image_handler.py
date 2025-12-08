@@ -5,10 +5,11 @@ from pathlib import Path
 import requests
 from PIL import Image
 
-from handler.constants import (DEFAULT_IMAGE_SIZE, FEEDS_FOLDER, FRAME_FOLDER,
-                               FRAMES_NET, FRAMES_SRCH, IMAGE_FOLDER,
-                               NEW_IMAGE_FOLDER, NUMBER_PIXELS_IMAGE,
-                               RGB_COLOR_SETTINGS)
+from handler.constants import (CURRENT_ID, DEFAULT_IMAGE_SIZE, FEEDS_FOLDER,
+                               FRAME_FOLDER, IMAGE_FOLDER, MSC_FRAMES_NET,
+                               MSC_FRAMES_SRCH, NEW_IMAGE_FOLDER,
+                               NUMBER_PIXELS_IMAGE, RGB_COLOR_SETTINGS,
+                               TVR_FRAMES_NET, TVR_FRAMES_SRCH)
 from handler.decorators import time_of_function
 from handler.exceptions import DirectoryCreationError, EmptyFeedsListError
 from handler.feeds import FEEDS
@@ -111,7 +112,7 @@ class FeedImage(FileMixin):
             def has_frame_parent(cat_id):
                 current_id = cat_id
                 while current_id:
-                    if current_id in FRAMES_NET:
+                    if current_id in CURRENT_ID:
                         return current_id
                     current_id = all_categories.get(current_id)
                 return None
@@ -253,11 +254,16 @@ class FeedImage(FileMixin):
             categories = self._get_category_dict(filenames)
 
             for file_name in filenames:
-                frame_name_dict = FRAMES_NET
+                frame_name_dict = MSC_FRAMES_NET
+                file_city = file_name.split('_')[-2]
+                if file_city == '2':
+                    frame_name_dict = TVR_FRAMES_NET
                 postfix = 'net'
 
                 if 'search' in file_name.split('_')[-1]:
-                    frame_name_dict = FRAMES_SRCH
+                    frame_name_dict = MSC_FRAMES_SRCH
+                    if file_city == '2':
+                        frame_name_dict = TVR_FRAMES_SRCH
                     postfix = 'srch'
 
                 tree = self._get_tree(file_name, self.feeds_folder)
@@ -267,7 +273,7 @@ class FeedImage(FileMixin):
                 for offer in offers:
                     offer_id = str(offer.get('id'))
                     category_elem = offer.find('categoryId')
-                    offer_key = f'{offer_id}_{postfix}'
+                    offer_key = f'{offer_id}_{file_city}_{postfix}'
 
                     if offer_key in image_framed_dict:
                         skipped_images += 1
