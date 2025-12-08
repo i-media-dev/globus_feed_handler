@@ -66,9 +66,10 @@ class FeedHandler(FileMixin):
                 root = tree.getroot()
                 postfix = FEEDS_POSTFIX[filename.split('_')[-1].split('.')[0]]
                 offers = list(root.findall('.//offer'))
+                file_city = filename.split('_')[-2]
                 for offer in offers:
                     offer_id = str(offer.get('id'))
-                    image_key = f'{offer_id}_{postfix}'
+                    image_key = f'{offer_id}_{file_city}_{postfix}'
 
                     if not offer_id:
                         continue
@@ -136,12 +137,6 @@ class FeedHandler(FileMixin):
                             offer_id, error
                         )
                 self._save_xml(root, self.new_feeds_folder, filename, '')
-            sum_offers = len(offers) * len(filenames)
-            logger.bot_event(
-                'Всего офферов - %s суммарно в %s фидах',
-                sum_offers,
-                len(filenames)
-            )
             logger.bot_event(
                 'Тег sales_notes с дефолтным текстом добавлен в %s офферов',
                 added_default_text
