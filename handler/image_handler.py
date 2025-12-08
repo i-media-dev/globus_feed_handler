@@ -327,7 +327,10 @@ class FeedImage(FileMixin):
                         final_image.paste(image, (x_position, y_position))
                         final_image.paste(frame_resized, (0, 0), frame_resized)
                         promo_name = name_of_frame.split('.')[0]
-                        filename = f'{offer_id}_{promo_name}_{postfix}.png'
+                        filename = (
+                            f'{offer_id}_{promo_name}_'
+                            f'{file_city}_{postfix}.png'
+                        )
                         final_image.save(new_file_path / filename, 'PNG')
                         total_framed_images += 1
 
