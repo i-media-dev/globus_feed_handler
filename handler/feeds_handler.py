@@ -2,8 +2,8 @@ import logging
 import xml.etree.ElementTree as ET
 
 from handler.constants import (ADDRESS, DEFAULT_TEXT, DOMEN_FTP, FEEDS_FOLDER,
-                               FEEDS_POSTFIX, NEW_FEEDS_FOLDER,
-                               NEW_IMAGE_FOLDER, PROMO_TEXT, PROTOCOL)
+                               FEEDS_POSTFIX, MSC_PROMO_TEXT, NEW_FEEDS_FOLDER,
+                               NEW_IMAGE_FOLDER, PROTOCOL, TVR_PROMO_TEXT)
 from handler.decorators import time_of_function
 from handler.logging_config import setup_logging
 from handler.mixins import FileMixin
@@ -120,8 +120,11 @@ class FeedHandler(FileMixin):
 
                     try:
                         sales_notes_tag = ET.SubElement(offer, 'sales_notes')
+                        promo_text = MSC_PROMO_TEXT
+                        if file_city == '2':
+                            promo_text = TVR_PROMO_TEXT
                         if offer_key in image_dict:
-                            sales_notes_tag.text = PROMO_TEXT.format(
+                            sales_notes_tag.text = promo_text.format(
                                 image_dict[offer_key].split(
                                     '.'
                                 )[0].split('_')[1]
