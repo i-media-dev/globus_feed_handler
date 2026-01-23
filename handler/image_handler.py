@@ -6,10 +6,11 @@ import requests
 from PIL import Image
 
 from handler.constants import (CURRENT_ID, DEFAULT_IMAGE_SIZE, FEEDS_FOLDER,
-                               FRAME_FOLDER, IMAGE_FOLDER, MSC_FRAMES_NET,
-                               MSC_FRAMES_SRCH, NEW_IMAGE_FOLDER,
-                               NUMBER_PIXELS_IMAGE, RGB_COLOR_SETTINGS,
-                               TVR_FRAMES_NET, TVR_FRAMES_SRCH)
+                               FILENAMES_ALL, FRAME_FOLDER, IMAGE_FOLDER,
+                               MSC_ALL_FRAME, MSC_FRAMES_NET, MSC_FRAMES_SRCH,
+                               NEW_IMAGE_FOLDER, NUMBER_PIXELS_IMAGE,
+                               RGB_COLOR_SETTINGS, TVR_FRAMES_NET,
+                               TVR_FRAMES_SRCH)
 from handler.decorators import time_of_function
 from handler.exceptions import DirectoryCreationError, EmptyFeedsListError
 from handler.feeds import FEEDS
@@ -102,6 +103,8 @@ class FeedImage(FileMixin):
         try:
             all_categories = {}
             for filename in filenames:
+                if filename in FILENAMES_ALL:  # КОСТЫЛЬ!
+                    continue
                 tree = self._get_tree(filename, self.feeds_folder)
                 root = tree.getroot()
                 for category in root.findall('.//category'):
@@ -171,6 +174,8 @@ class FeedImage(FileMixin):
         try:
             filenames = self._get_filenames_set(self.feeds_folder)
             for filename in filenames:
+                if filename in FILENAMES_ALL:  # КОСТЫЛЬ!
+                    continue
                 tree = self._get_tree(filename, self.feeds_folder)
                 root = tree.getroot()
                 offers = root.findall('.//offer')
@@ -254,6 +259,8 @@ class FeedImage(FileMixin):
             categories = self._get_category_dict(filenames)
 
             for file_name in filenames:
+                if file_name in FILENAMES_ALL:  # КОСТЫЛЬ!
+                    continue
                 frame_name_dict = MSC_FRAMES_NET
                 file_city = file_name.split('_')[-2]
                 if file_city == '2':
@@ -351,6 +358,107 @@ class FeedImage(FileMixin):
             )
             logger.bot_event('Успешно обрамлено - %s', total_framed_images)
             logger.bot_event('Неудачно обрамлено - %s', total_failed_images)
+        except Exception as error:
+            logging.error('Неожиданная ошибка наложения рамки: %s', error)
+            raise
+
+# ---------------------------------------- костыль для нового фида msk
+    @time_of_function
+    def add_frame_all(self) -> None:
+        """Метод форматирует изображения и добавляет рамку."""
+        total_framed_images = 0
+        total_failed_images = 0
+        skipped_images = 0
+        file_path = self._make_dir(self.image_folder)
+        frame_path = self._make_dir(self.frame_folder)
+        new_file_path = self._make_dir(self.new_image_folder)
+        images_names_list = self._get_filenames_set(self.image_folder)
+
+        image_framed_dict = self._get_image_dict(self.new_image_folder)
+        if not image_framed_dict:
+            logging.info(
+                'Обрамленные изображениями отсутствуют. Первый запуск'
+            )
+        images_dict = {}
+        for image_name in images_names_list:
+            offer_id = image_name.split('.')[0]
+            images_dict[offer_id] = image_name
+
+        try:
+            filenames = FILENAMES_ALL
+            for file_name in filenames:
+                file_city = file_name.split('_')[-2]
+
+                tree = self._get_tree(file_name, self.feeds_folder)
+                root = tree.getroot()
+                offers = root.findall('.//offer')
+
+                for offer in offers:
+                    offer_id = str(offer.get('id'))
+                    offer_key = f'{offer_id}_{file_city}'
+
+                    if offer_key in image_framed_dict:
+                        skipped_images += 1
+                        continue
+
+                    try:
+                        image_name = images_dict[offer_id]
+
+                        with Image.open(file_path / image_name) as image:
+                            image.load()
+                            image_width, image_height = image.size
+
+                        with Image.open(frame_path / MSC_ALL_FRAME) as frame:
+                            frame_resized = frame.resize(DEFAULT_IMAGE_SIZE)
+
+                        final_image = Image.new(
+                            'RGB',
+                            DEFAULT_IMAGE_SIZE,
+                            RGB_COLOR_SETTINGS
+                        )
+
+                        canvas_width, canvas_height = DEFAULT_IMAGE_SIZE
+                        x_position = (canvas_width - image_width) // 2
+                        y_position = (
+                            canvas_height - image_height
+                        ) // 2
+
+                        if image_width > canvas_width \
+                                or image_height > canvas_height:
+                            new_width = int(image_width * 50 / 100)
+                            new_height = int(image_height * 50 / 100)
+                            image = image.resize((new_width, new_height))
+                            x_position = (canvas_width - new_width) // 2
+                            y_position = (
+                                canvas_height - new_height
+                            ) // 2
+
+                        final_image.paste(image, (x_position, y_position))
+                        final_image.paste(frame_resized, (0, 0), frame_resized)
+                        promo_name = MSC_ALL_FRAME.split('.')[0]
+                        filename = (
+                            f'{offer_id}_{promo_name}_'
+                            f'{file_city}_all.png'
+                        )
+                        final_image.save(new_file_path / filename, 'PNG')
+                        total_framed_images += 1
+
+                    except Exception as error:
+                        total_failed_images += 1
+                        logging.error(
+                            'Ошибка при обрамлении %s: %s',
+                            offer_id,
+                            error
+                        )
+            logger.bot_event(
+                'Количество уже обрамленных изображений all рамкой - %s',
+                skipped_images
+            )
+            logger.bot_event('Успешно обрамлено all - %s', total_framed_images)
+            logger.bot_event(
+                'Неудачно обрамлено all - %s',
+                total_failed_images
+            )
         except Exception as error:
             logging.error('Неожиданная ошибка наложения рамки: %s', error)
             raise

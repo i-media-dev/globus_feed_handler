@@ -1,9 +1,11 @@
 import logging
 import xml.etree.ElementTree as ET
 
-from handler.constants import (ADDRESS, DEFAULT_TEXT, DOMEN_FTP, FEEDS_FOLDER,
-                               FEEDS_POSTFIX, MSC_PROMO_TEXT, NEW_FEEDS_FOLDER,
-                               NEW_IMAGE_FOLDER, PROTOCOL, TVR_PROMO_TEXT)
+from handler.constants import (ADDRESS_FTP_IMAGES, DEFAULT_TEXT, FEEDS_FOLDER,
+                               FEEDS_POSTFIX, FILENAMES_ALL, FILENAMES_ALL_NEW,
+                               MSC_PROMO_TEXT, MSC_PROMO_TEXT_ALL,
+                               NEW_FEEDS_FOLDER, NEW_IMAGE_FOLDER,
+                               TVR_PROMO_TEXT)
 from handler.decorators import time_of_function
 from handler.logging_config import setup_logging
 from handler.mixins import FileMixin
@@ -62,6 +64,8 @@ class FeedHandler(FileMixin):
             filenames = self._get_filenames_set(self.feeds_folder)
 
             for filename in filenames:
+                if filename in FILENAMES_ALL:  # КОСТЫЛЬ!
+                    continue
                 tree = self._get_tree(filename, self.feeds_folder)
                 root = tree.getroot()
                 postfix = FEEDS_POSTFIX[filename.split('_')[-1].split('.')[0]]
@@ -82,8 +86,7 @@ class FeedHandler(FileMixin):
 
                         picture_tag = ET.SubElement(offer, 'picture')
                         picture_tag.text = (
-                            f'{PROTOCOL}://{DOMEN_FTP}/'
-                            f'{ADDRESS}/{image_dict[image_key]}'
+                            f'{ADDRESS_FTP_IMAGES}/{image_dict[image_key]}'
                         )
                         input_images += 1
                 self._save_xml(root, self.new_feeds_folder, filename)
@@ -108,6 +111,8 @@ class FeedHandler(FileMixin):
             filenames = self._get_filenames_set(self.new_feeds_folder)
 
             for filename in filenames:
+                if filename in FILENAMES_ALL:  # КОСТЫЛЬ!
+                    continue
                 tree = self._get_tree(filename, self.new_feeds_folder)
                 root = tree.getroot()
                 offers = list(root.findall('.//offer'))
@@ -123,6 +128,108 @@ class FeedHandler(FileMixin):
                         promo_text = MSC_PROMO_TEXT
                         if file_city == '2':
                             promo_text = TVR_PROMO_TEXT
+                        if offer_key in image_dict:
+                            sales_notes_tag.text = promo_text.format(
+                                image_dict[offer_key].split(
+                                    '.'
+                                )[0].split('_')[1]
+                            )
+                            added_promo_text += 1
+                        else:
+                            sales_notes_tag.text = DEFAULT_TEXT
+                            added_default_text += 1
+                    except (IndexError, KeyError) as error:
+                        logging.warning(
+                            'Не удалось добавить sales_notes '
+                            'для оффера %s: %s',
+                            offer_id, error
+                        )
+                self._save_xml(root, self.new_feeds_folder, filename, '')
+            logger.bot_event(
+                'Тег sales_notes с дефолтным текстом добавлен в %s офферов',
+                added_default_text
+            )
+            logger.bot_event(
+                'Тег sales_notes c промокодом добавлен в %s офферов',
+                added_promo_text
+            )
+        except Exception as error:
+            logging.error('Неожиданная ошибка: %s', error)
+
+# ---------------------------------------- костыль для нового фида msk
+    @time_of_function
+    def image_replacement_all(self) -> None:
+        """Метод, подставляющий в фиды новые изображения."""
+        deleted_images = 0
+        input_images = 0
+        try:
+            image_dict = self._get_image_dict_all(self.new_image_folder)
+
+            if not image_dict:
+                logging.warning('Нет подходящих изображений для замены')
+                return
+
+            filenames = FILENAMES_ALL
+
+            for filename in filenames:
+                tree = self._get_tree(filename, self.feeds_folder)
+                root = tree.getroot()
+
+                offers = list(root.findall('.//offer'))
+                file_city = filename.split('_')[-2]
+                for offer in offers:
+                    offer_id = str(offer.get('id'))
+                    image_key = f'{offer_id}_{file_city}'
+
+                    if not offer_id:
+                        continue
+
+                    if image_key in image_dict:
+                        pictures = offer.findall('picture')
+                        for picture in pictures:
+                            offer.remove(picture)
+                        deleted_images += len(pictures)
+
+                        picture_tag = ET.SubElement(offer, 'picture')
+                        picture_tag.text = (
+                            f'{ADDRESS_FTP_IMAGES}/{image_dict[image_key]}'
+                        )
+                        input_images += 1
+                self._save_xml(root, self.new_feeds_folder, filename)
+            logger.bot_event(
+                'Количество удаленных изображений - %s',
+                deleted_images
+            )
+            logger.bot_event(
+                'Количество добавленных изображений - %s',
+                input_images
+            )
+
+        except Exception as error:
+            logging.error('Ошибка в image_replacement: %s', error)
+            raise
+
+    def add_sales_notes_all(self):
+        added_promo_text = 0
+        added_default_text = 0
+        try:
+            image_dict = self._get_image_dict_all(self.new_image_folder)
+            filenames = FILENAMES_ALL_NEW
+
+            for filename in filenames:
+                tree = self._get_tree(filename, self.new_feeds_folder)
+                root = tree.getroot()
+                offers = list(root.findall('.//offer'))
+                file_city = filename.split('_')[-2]
+
+                for offer in offers:
+                    offer_id = str(offer.get('id'))
+                    offer_key = f'{offer_id}_{file_city}'
+
+                    try:
+                        sales_notes_tag = ET.SubElement(offer, 'sales_notes')
+                        promo_text = MSC_PROMO_TEXT_ALL
+
                         if offer_key in image_dict:
                             sales_notes_tag.text = promo_text.format(
                                 image_dict[offer_key].split(

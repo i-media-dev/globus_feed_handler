@@ -4,6 +4,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+FILENAMES_ALL = ('feed_export_yandex_multi_yandex_1_all.xml',)
+"""Отдельные брендовые фиды на все товары."""
+
+FILENAMES_ALL_NEW = ('new_feed_export_yandex_multi_yandex_1_all.xml',)
+"""Отдельные брендовые фиды на все товары (новые)."""
+
 ATTEMPTION_LOAD_FEED = 3
 """Попытки для скачивания фида."""
 
@@ -13,14 +19,8 @@ DATE_FORMAT = '%Y-%m-%d'
 TIME_FORMAT = '%H:%M:%S'
 """Формат времени по умолчанию."""
 
-PROTOCOL = 'https'
-"""Протокол запроса."""
-
-ADDRESS = 'projects/globus/new_images'
-"""Путь к файлу."""
-
-DOMEN_FTP = 'feeds.i-media.ru'
-"""Домен FTP-сервера."""
+ADDRESS_FTP_IMAGES = 'https://feeds.i-media.ru/projects/globus/new_images'
+"""Адрес директории на ftp для изображений."""
 
 VERTICAL_OFFSET = 0
 """
@@ -55,6 +55,11 @@ DEFAULT_TEXT = (
 )
 """Дефолтный текст к оферу."""
 
+MSC_PROMO_TEXT_ALL = (
+    'Скидка 10% по промокоду {} и бесплатная доставка по '
+    'Москве и области от 6000 ₽.'
+)
+
 MSC_PROMO_TEXT = (
     'Скидка 10% по промокоду {} и бесплатная доставка по '
     'Москве и области от 6000 ₽.'
@@ -74,6 +79,8 @@ FEEDS_POSTFIX = {
     'search': 'srch',
 }
 """Словарь постфиксов для фидов и изображений к фидам соответственно."""
+
+MSC_ALL_FRAME = 'RST27.png'
 
 MSC_FRAMES_NET = {
     '636': 'RST1.png',

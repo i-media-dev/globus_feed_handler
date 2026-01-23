@@ -106,3 +106,36 @@ class FileMixin:
                 )
                 raise
         return image_dict
+
+# ---------------------------------------- костыль для нового фида msk
+    def _get_image_dict_all(self, image_folder: str) -> dict:
+        image_dict: dict = {}
+        try:
+            image_names = self._get_filenames_set(image_folder)
+        except (DirectoryCreationError, EmptyFeedsListError):
+            logging.warning(
+                'Нет подходящих офферов для обрамления изображений'
+            )
+            return image_dict
+        for img_file in image_names:
+            try:
+                offer_id = img_file.split('.')[0].split('_')[0]
+                file_city = img_file.split('_')[-2]
+
+                image_key = f'{offer_id}_{file_city}'
+                image_dict[image_key] = img_file
+            except (ValueError, IndexError):
+                logging.warning(
+                    'Не удалось присвоить изображение %s ключу %s',
+                    img_file,
+                    image_key
+                )
+                continue
+            except Exception as error:
+                logging.error(
+                    'Неожиданная ошибка во время '
+                    'сборки словаря image_dict: %s',
+                    error
+                )
+                raise
+        return image_dict

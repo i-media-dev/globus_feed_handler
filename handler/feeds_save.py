@@ -57,10 +57,14 @@ class FeedSave(FileMixin):
             logging.error('Ошибка при загрузке %s: %s', feed, error)
             raise
 
-    def _get_filename(self, feed: str) -> tuple[str, str]:
+    def _get_filename(self, feed: str) -> tuple[str, ...]:
         """Защищенный метод, формирующий имя xml-файлу."""
         feedname = feed.split('/')[-1].split('.')[0]
-        return f'{feedname}_search.xml', f'{feedname}_network.xml'
+        return (
+            f'{feedname}_search.xml',
+            f'{feedname}_network.xml',
+            f'{feedname}_all.xml'
+        )
 
     def _validate_xml(self, xml_content: bytes) -> str:
         """
@@ -90,7 +94,7 @@ class FeedSave(FileMixin):
         saved_files = 0
         folder_path = self._make_dir(self.feeds_folder)
         for feed in self.feeds_list:
-            file_name, file_name_copy = self._get_filename(feed)
+            file_name, file_name_copy, _ = self._get_filename(feed)
             file_path = folder_path / file_name
             try:
                 response = self._get_file(feed)
@@ -133,3 +137,44 @@ class FeedSave(FileMixin):
             total_files
         )
         logger.bot_event('Создано копий - %s/%s.', saved_copy, total_files)
+
+# ---------------------------------------- костыль для нового фида msk
+    @time_of_function
+    def save_xml_one(self, feed) -> None:
+        """Метод, сохраняющий фид в xml-файлы."""
+        saved_files = 0
+        folder_path = self._make_dir(self.feeds_folder)
+        _, _, filename = self._get_filename(feed)
+        file_path = folder_path / filename
+        try:
+            response = self._get_file(feed)
+            xml_content = response.content
+            decoded_content = self._validate_xml(xml_content)
+            xml_tree = ET.fromstring(decoded_content)
+            self._indent(xml_tree)
+            tree = ET.ElementTree(xml_tree)
+            with open(file_path, 'wb') as file:
+                tree.write(file, encoding=ENCODING, xml_declaration=True)
+
+            saved_files += 1
+            logging.info(
+                '\nФайл %s успешно сохранен',
+                filename
+            )
+        except requests.exceptions.RequestException as error:
+            logging.warning('Фид %s не получен: %s', filename, error)
+            return
+        except (EmptyXMLError, InvalidXMLError) as error:
+            logging.error('Ошибка валидации XML %s: %s', filename, error)
+            return
+        except Exception as error:
+            logging.error(
+                'Ошибка обработки файла %s: %s',
+                filename,
+                error
+            )
+            raise
+        logger.bot_event(
+            'Успешно записано %s/1 файл для всех товаров.',
+            saved_files,
+        )
