@@ -374,7 +374,7 @@ class FeedImage(FileMixin):
         new_file_path = self._make_dir(self.new_image_folder)
         images_names_list = self._get_filenames_set(self.image_folder)
 
-        image_framed_dict = self._get_image_dict(self.new_image_folder)
+        image_framed_dict = self._get_image_dict_all(self.new_image_folder)
         if not image_framed_dict:
             logging.info(
                 'Обрамленные изображениями отсутствуют. Первый запуск'
