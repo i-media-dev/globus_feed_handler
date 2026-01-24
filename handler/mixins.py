@@ -118,6 +118,8 @@ class FileMixin:
             )
             return image_dict
         for img_file in image_names:
+            if '_all' not in img_file:
+                continue
             try:
                 offer_id = img_file.split('.')[0].split('_')[0]
                 file_city = img_file.split('_')[-2]
