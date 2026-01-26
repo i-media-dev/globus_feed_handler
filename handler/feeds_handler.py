@@ -111,7 +111,7 @@ class FeedHandler(FileMixin):
             filenames = self._get_filenames_set(self.new_feeds_folder)
 
             for filename in filenames:
-                if filename in FILENAMES_ALL:  # КОСТЫЛЬ!
+                if filename in FILENAMES_ALL_NEW:  # КОСТЫЛЬ!
                     continue
                 tree = self._get_tree(filename, self.new_feeds_folder)
                 root = tree.getroot()
