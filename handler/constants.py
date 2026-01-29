@@ -22,6 +22,9 @@ TIME_FORMAT = '%H:%M:%S'
 ADDRESS_FTP_IMAGES = 'https://feeds.i-media.ru/projects/globus/new_images'
 """Адрес директории на ftp для изображений."""
 
+SPARE_ADRESS_IMAGES = 'https://feeds.i-media.ru/projects/globus/renew_images'
+"""Запасной адрес для перерисованных изображений."""
+
 VERTICAL_OFFSET = 0
 """
 Сдвиг вниз по вертикали (опциональный параметр).

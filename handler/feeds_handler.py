@@ -5,7 +5,7 @@ from handler.constants import (ADDRESS_FTP_IMAGES, DEFAULT_TEXT, FEEDS_FOLDER,
                                FEEDS_POSTFIX, FILENAMES_ALL, FILENAMES_ALL_NEW,
                                MSC_PROMO_TEXT, MSC_PROMO_TEXT_ALL,
                                NEW_FEEDS_FOLDER, NEW_IMAGE_FOLDER,
-                               TVR_PROMO_TEXT)
+                               SPARE_ADRESS_IMAGES, TVR_PROMO_TEXT)
 from handler.decorators import time_of_function
 from handler.logging_config import setup_logging
 from handler.mixins import FileMixin
@@ -80,14 +80,22 @@ class FeedHandler(FileMixin):
 
                     if image_key in image_dict:
                         pictures = offer.findall('picture')
+
+                        image_url = (
+                            f'{ADDRESS_FTP_IMAGES}/{image_dict[image_key]}'
+                        )  # КОСТЫЛЬ
+                        if offer_id in ('666353',):  # КОСТЫЛЬ
+                            image_url = (
+                                f'{SPARE_ADRESS_IMAGES}/'
+                                f'{image_dict[image_key]}'
+                            )  # КОСТЫЛЬ
+
                         for picture in pictures:
                             offer.remove(picture)
                         deleted_images += len(pictures)
 
                         picture_tag = ET.SubElement(offer, 'picture')
-                        picture_tag.text = (
-                            f'{ADDRESS_FTP_IMAGES}/{image_dict[image_key]}'
-                        )
+                        picture_tag.text = image_url
                         input_images += 1
                 self._save_xml(root, self.new_feeds_folder, filename)
             logger.bot_event(
